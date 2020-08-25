@@ -257,6 +257,10 @@ impl pallet_sudo::Trait for Runtime {
 	type Call = Call;
 }
 
+impl ibc::Trait for Runtime {
+	  type Event = Event;
+}
+
 /// Configure the pallet template in pallets/template.
 impl template::Trait for Runtime {
 	type Event = Event;
@@ -279,6 +283,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the template pallet in the runtime.
 		TemplateModule: template::{Module, Call, Storage, Event<T>},
+		Ibc: ibc::{Module, Call, Storage, Event<T>},
 	}
 );
 
