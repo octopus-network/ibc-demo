@@ -4,7 +4,7 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get, traits::ModuleToIndex};
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get, traits::ModuleToIndex, weights::Weight};
 use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_finality_grandpa::{AuthorityList, SetId};
@@ -65,6 +65,21 @@ decl_module! {
 
 		// Events must be initialized if they are used by the pallet.
 		fn deposit_event() = default;
+
+		/// Called when a block is initialized.
+		fn on_initialize(n: T::BlockNumber) -> Weight {
+			let module_index = T::ModuleToIndex::module_to_index::<Self>()
+				.expect("Every active module has an index in the runtime; qed") as u8;
+			let packets = ibc::PendingPackets::get(module_index);
+			sp_std::if_std! {
+				for packet in packets {
+					println!("received packet in template module: {:?}", packet);
+				}
+			}
+			ibc::PendingPackets::remove(module_index);
+
+			0
+		}
 
 		/// An example dispatchable that takes a singles value as a parameter, writes the value to
 		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
@@ -221,4 +236,16 @@ decl_module! {
 			Ok(())
 		}
 	}
+}
+
+impl<T: Trait> Module<T> {
+    fn on_chan_open_init() {}
+    fn on_chan_open_try() {}
+    fn on_chan_open_ack() {}
+    fn on_chan_open_confirm() {}
+    fn on_chan_close_confirm() {}
+    fn on_recv_packet() {}
+    fn on_timeout_packet() {}
+    fn on_acknowledge_packet() {}
+    fn on_timeout_packet_close() {}
 }
