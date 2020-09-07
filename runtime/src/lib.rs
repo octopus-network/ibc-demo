@@ -38,6 +38,16 @@ pub use frame_support::{
 	},
 };
 
+pub struct CallbackDispatcherImpl;
+
+impl ibc::CallbackDispatcher for CallbackDispatcherImpl {
+	fn on_recv_packet(index: usize, packet: ibc::Packet) {
+		if index == 8 {
+			template::Module::<Runtime>::on_recv_packet(packet);
+		}
+	}
+}
+
 /// Import the template pallet.
 pub use template;
 
@@ -259,6 +269,7 @@ impl pallet_sudo::Trait for Runtime {
 
 impl ibc::Trait for Runtime {
 	  type Event = Event;
+	  type CallbackDispatcher = CallbackDispatcherImpl;
 }
 
 /// Configure the pallet template in pallets/template.
