@@ -225,9 +225,25 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn on_chan_open_init() {}
-    fn on_chan_open_try() {}
-    fn on_chan_open_ack() {}
-    fn on_chan_open_confirm() {}
+
+    pub fn on_chan_open_try(order: ibc::ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>) {
+        sp_std::if_std! {
+            println!("on_chan_open_try");
+        }
+    }
+
+    pub fn on_chan_open_ack(port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>) {
+        sp_std::if_std! {
+            println!("on_chan_open_ack");
+        }
+    }
+
+    pub fn on_chan_open_confirm(port_identifier: Vec<u8>, channel_identifier: H256) {
+        sp_std::if_std! {
+            println!("on_chan_open_confirm");
+        }
+    }
+
     fn on_chan_close_confirm() {}
 
     pub fn on_recv_packet(packet: ibc::Packet) {

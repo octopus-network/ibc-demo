@@ -7,7 +7,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use sp_std::prelude::*;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H256};
 use sp_runtime::{
 	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys, MultiSignature,
 	transaction_validity::{TransactionValidity, TransactionSource},
@@ -41,6 +41,24 @@ pub use frame_support::{
 pub struct CallbackDispatcherImpl;
 
 impl ibc::CallbackDispatcher for CallbackDispatcherImpl {
+	fn on_chan_open_try(index: usize, order: ibc::ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>) {
+		  if index == 8 {
+			    template::Module::<Runtime>::on_chan_open_try(order, connection_hops, port_identifier, channel_identifier, counterparty_port_identifier, counterparty_channel_identifier, version, counterparty_version);
+		  }
+	}
+
+    fn on_chan_open_ack(index: usize, port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>) {
+		    if index == 8 {
+			      template::Module::<Runtime>::on_chan_open_ack(port_identifier, channel_identifier, version);
+		    }
+    }
+
+    fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
+		    if index == 8 {
+			      template::Module::<Runtime>::on_chan_open_confirm(port_identifier, channel_identifier);
+		    }
+    }
+
 	fn on_recv_packet(index: usize, packet: ibc::Packet) {
 		if index == 8 {
 			template::Module::<Runtime>::on_recv_packet(packet);

@@ -41,8 +41,6 @@ git clone https://github.com/cdot-network/ibc-demo.git
 cd ibc-demo
 git submodule update --init
 cargo build --release
-# If you alread compiled successfully, WASM build can be omitted in subsequent build.
-SKIP_WASM_BUILD=1 cargo build --release
 ```
 
 ## Run
