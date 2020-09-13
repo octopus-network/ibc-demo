@@ -38,32 +38,64 @@ pub use frame_support::{
 	},
 };
 
-pub struct CallbackDispatcherImpl;
+// The ModuleCallbacksImpl creates a static mapping of module index and callback functions of other modules.
+// The module index is determined at the time of construct_runtime. For example,
+// the index of TemplateModule is 8 in the current runtime.
+// In the future, we should find a more dynamic way to create this mapping.
+pub struct ModuleCallbacksImpl;
 
-impl ibc::CallbackDispatcher for CallbackDispatcherImpl {
-	fn on_chan_open_try(index: usize, order: ibc::ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>) {
-		  if index == 8 {
-			    template::Module::<Runtime>::on_chan_open_try(order, connection_hops, port_identifier, channel_identifier, counterparty_port_identifier, counterparty_channel_identifier, version, counterparty_version);
-		  }
-	}
+impl ibc::ModuleCallbacks for ModuleCallbacksImpl {
+    fn on_chan_open_try(
+        index: usize,
+        order: ibc::ChannelOrder,
+        connection_hops: Vec<H256>,
+        port_identifier: Vec<u8>,
+        channel_identifier: H256,
+        counterparty_port_identifier: Vec<u8>,
+        counterparty_channel_identifier: H256,
+        version: Vec<u8>,
+        counterparty_version: Vec<u8>,
+    ) {
+        if index == 8 {
+            template::Module::<Runtime>::on_chan_open_try(
+                order,
+                connection_hops,
+                port_identifier,
+                channel_identifier,
+                counterparty_port_identifier,
+                counterparty_channel_identifier,
+                version,
+                counterparty_version,
+            );
+        }
+    }
 
-    fn on_chan_open_ack(index: usize, port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>) {
-		    if index == 8 {
-			      template::Module::<Runtime>::on_chan_open_ack(port_identifier, channel_identifier, version);
-		    }
+    fn on_chan_open_ack(
+        index: usize,
+        port_identifier: Vec<u8>,
+        channel_identifier: H256,
+        version: Vec<u8>,
+    ) {
+        if index == 8 {
+            template::Module::<Runtime>::on_chan_open_ack(
+                port_identifier,
+                channel_identifier,
+                version,
+            );
+        }
     }
 
     fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
-		    if index == 8 {
-			      template::Module::<Runtime>::on_chan_open_confirm(port_identifier, channel_identifier);
-		    }
+        if index == 8 {
+            template::Module::<Runtime>::on_chan_open_confirm(port_identifier, channel_identifier);
+        }
     }
 
-	fn on_recv_packet(index: usize, packet: ibc::Packet) {
-		if index == 8 {
-			template::Module::<Runtime>::on_recv_packet(packet);
-		}
-	}
+    fn on_recv_packet(index: usize, packet: ibc::Packet) {
+        if index == 8 {
+            template::Module::<Runtime>::on_recv_packet(packet);
+        }
+    }
 }
 
 /// Import the template pallet.
@@ -287,7 +319,7 @@ impl pallet_sudo::Trait for Runtime {
 
 impl ibc::Trait for Runtime {
 	  type Event = Event;
-	  type CallbackDispatcher = CallbackDispatcherImpl;
+	  type ModuleCallbacks = ModuleCallbacksImpl;
 }
 
 /// Configure the pallet template in pallets/template.
