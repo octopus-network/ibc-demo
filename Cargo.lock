@@ -6930,8 +6930,8 @@ dependencies = [
 
 [[package]]
 name = "substrate-subxt"
-version = "0.11.0"
-source = "git+https://github.com/cdot-network/substrate-subxt.git?branch=ibc-demo#6c76ca8d1143472aa39e37b39e131b0a996b2dec"
+version = "0.12.0"
+source = "git+https://github.com/cdot-network/substrate-subxt.git?branch=ibc-demo#ce8a1b70e0386ad94d4042230d64e5232375a2f8"
 dependencies = [
  "frame-metadata",
  "frame-support",
@@ -6957,8 +6957,8 @@ dependencies = [
 
 [[package]]
 name = "substrate-subxt-proc-macro"
-version = "0.11.0"
-source = "git+https://github.com/cdot-network/substrate-subxt.git?branch=ibc-demo#6c76ca8d1143472aa39e37b39e131b0a996b2dec"
+version = "0.12.0"
+source = "git+https://github.com/cdot-network/substrate-subxt.git?branch=ibc-demo#ce8a1b70e0386ad94d4042230d64e5232375a2f8"
 dependencies = [
  "heck",
  "proc-macro-crate",
@@ -7551,7 +7551,7 @@ version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bfd5b7557925ce778ff9b9ef90e3ade34c524b5ff10e239c69a42d546d2af56"
 dependencies = [
- "rand 0.7.3",
+ "rand 0.3.23",
 ]
 
 [[package]]
