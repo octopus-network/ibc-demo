@@ -104,6 +104,7 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                 .build()
                 .await?;
 
+            // subscribe_finalized_blocks is equivalent to queryHeader
             let mut from_block_headers = from_client.subscribe_finalized_blocks().await?;
 
             let (tx, rx) = channel();
@@ -180,6 +181,7 @@ async fn relay(
     debug!("[{}] block_number: {}", chain_name, block_number);
     debug!("[{}] state_root: {:?}", chain_name, state_root);
     debug!("[{}] block_hash: {:?}", chain_name, block_hash);
+    // this method is equivalent to queryClientState
     let client_state = client.clients(client_identifier, Some(block_hash)).await?;
 
     let counterparty_block_hash = counterparty_client
@@ -248,6 +250,7 @@ async fn relay(
         if connection_end.state == ConnectionState::Init
             && remote_connection_end.state == ConnectionState::None
         {
+            // this is equivalent to queryChainConsensusState
             let consensus_states = ibc::ConsensusStatesStore::<Runtime> {
                 key: (client_identifier, block_number),
                 _runtime: Default::default(),
