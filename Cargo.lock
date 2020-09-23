@@ -3807,6 +3807,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hash-db",
+ "hex",
  "parity-scale-codec",
  "serde",
  "sp-core",

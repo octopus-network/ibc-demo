@@ -14,7 +14,7 @@ use substrate_subxt::{
 pub trait Ibc: System + Balances {}
 
 #[derive(Encode, Store)]
-pub struct ClientsStore<T: Ibc> {
+pub struct ClientStatesStore<T: Ibc> {
     #[store(returns = pallet_ibc::ClientState)]
     pub key: H256,
     pub _runtime: PhantomData<T>,

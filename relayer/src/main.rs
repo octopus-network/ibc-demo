@@ -1,5 +1,5 @@
 use calls::{
-    ibc::{self, ChannelsStoreExt, ClientsStoreExt, ConnectionsStoreExt, SubmitDatagramCallExt},
+    ibc::{self, ChannelsStoreExt, ClientStatesStoreExt, ConnectionsStoreExt, SubmitDatagramCallExt},
     NodeRuntime as Runtime,
 };
 use clap::{App, Arg, ArgMatches};
@@ -182,7 +182,7 @@ async fn relay(
     debug!("[{}] state_root: {:?}", chain_name, state_root);
     debug!("[{}] block_hash: {:?}", chain_name, block_hash);
     // this method is equivalent to queryClientState
-    let client_state = client.clients(client_identifier, Some(block_hash)).await?;
+    let client_state = client.client_states(client_identifier, Some(block_hash)).await?;
 
     let counterparty_block_hash = counterparty_client
         .block_hash(Some(BlockNumber::from(client_state.latest_height)))
@@ -192,7 +192,7 @@ async fn relay(
         chain_name, client_state.latest_height
     );
     let counterparty_client_state = counterparty_client
-        .clients(counterparty_client_identifier, None)
+        .client_states(counterparty_client_identifier, None)
         .await?;
     if counterparty_client_state.latest_height < block_number {
         for height in counterparty_client_state.latest_height + 1..=block_number {
