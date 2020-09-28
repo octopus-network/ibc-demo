@@ -5,7 +5,7 @@ use calls::{
 use clap::{App, Arg, ArgMatches};
 use codec::Decode;
 use log::{debug, error, info};
-use pallet_ibc::{ChannelState, ConnectionState, Datagram, Header, Packet};
+use pallet_ibc::{ChannelState, ConnectionState, Datagram, grandpa::header::Header, Packet};
 use serde_derive::Deserialize;
 use sp_core::{storage::StorageKey, twox_128, H256};
 use sp_finality_grandpa::GRANDPA_AUTHORITIES_KEY;

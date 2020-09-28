@@ -110,14 +110,15 @@ decl_module! {
 			height: u32,
 			set_id: SetId,
 			authorities: AuthorityList,
-			commitment_root: H256
+			root: H256
 		) -> dispatch::DispatchResult {
 			let _who = ensure_signed(origin)?;
 
-			let consensus_state = ibc::ConsensusState {
+			let consensus_state = ibc::grandpa::consensus_state::ConsensusState {
+				root,
+				height,
 				set_id,
 				authorities,
-				commitment_root,
 			};
 			<ibc::Module<T>>::create_client(identifier, ibc::ClientType::GRANDPA, height, consensus_state)?;
 

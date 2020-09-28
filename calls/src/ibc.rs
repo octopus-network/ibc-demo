@@ -15,14 +15,14 @@ pub trait Ibc: System + Balances {}
 
 #[derive(Encode, Store)]
 pub struct ClientStatesStore<T: Ibc> {
-    #[store(returns = pallet_ibc::ClientState)]
+    #[store(returns = pallet_ibc::grandpa::client_state::ClientState)]
     pub key: H256,
     pub _runtime: PhantomData<T>,
 }
 
 #[derive(Encode, Store)]
 pub struct ConsensusStatesStore<T: Ibc> {
-    #[store(returns = pallet_ibc::ConsensusState)]
+    #[store(returns = pallet_ibc::grandpa::consensus_state::ConsensusState)]
     pub key: (H256, u32),
     pub _runtime: PhantomData<T>,
 }

@@ -21,7 +21,7 @@ pub struct TestCreateClientCall<T: TemplateModule> {
     pub height: u32,
     pub set_id: SetId,
     pub authority_list: AuthorityList,
-    pub commitment_root: H256,
+    pub root: H256,
 }
 
 /// Arguments for opening connection.
