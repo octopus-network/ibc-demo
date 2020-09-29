@@ -413,7 +413,7 @@ async fn relay(
         .collect::<Vec<frame_system::EventRecord<node_runtime::Event, <Runtime as System>::Hash>>>();
     for event in events.into_iter() {
         match event.event {
-            node_runtime::Event::ibc(pallet_ibc::RawEvent::SendPacket(
+            node_runtime::Event::pallet_ibc(pallet_ibc::RawEvent::SendPacket(
                 sequence,
                 data,
                 timeout_height,
@@ -445,7 +445,7 @@ async fn relay(
                 };
                 tx.send(datagram).unwrap();
             }
-            node_runtime::Event::ibc(pallet_ibc::RawEvent::RecvPacket(
+            node_runtime::Event::pallet_ibc(pallet_ibc::RawEvent::RecvPacket(
                 sequence,
                 data,
                 timeout_height,

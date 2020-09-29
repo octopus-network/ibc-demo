@@ -4,7 +4,7 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get, traits::ModuleToIndex};
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get, traits::PalletInfo};
 use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_finality_grandpa::{AuthorityList, SetId};
@@ -148,7 +148,7 @@ decl_module! {
 		#[weight = 0]
 		pub fn test_bind_port(origin, identifier: Vec<u8>) -> dispatch::DispatchResult {
 			let _who = ensure_signed(origin)?;
-			let module_index = T::ModuleToIndex::module_to_index::<Self>()
+			let module_index = T::PalletInfo::index::<Self>()
 				.expect("Every active module has an index in the runtime; qed") as u8;
 
 			<ibc::Module<T>>::bind_port(identifier, module_index)?;
@@ -159,7 +159,7 @@ decl_module! {
 		#[weight = 0]
 		pub fn test_release_port(origin, identifier: Vec<u8>) -> dispatch::DispatchResult {
 			let _who = ensure_signed(origin)?;
-			let module_index = T::ModuleToIndex::module_to_index::<Self>()
+			let module_index = T::PalletInfo::index::<Self>()
 				.expect("Every active module has an index in the runtime; qed") as u8;
 
 			<ibc::Module<T>>::release_port(identifier, module_index)?;
@@ -178,7 +178,7 @@ decl_module! {
 			counterparty_channel_identifier: H256,
 		) -> dispatch::DispatchResult {
 			let _who = ensure_signed(origin)?;
-			let module_index = T::ModuleToIndex::module_to_index::<Self>()
+			let module_index = T::PalletInfo::index::<Self>()
 				.expect("Every active module has an index in the runtime; qed") as u8;
 			let order = if unordered { ibc::ChannelOrder::Unordered } else { ibc::ChannelOrder::Ordered };
 
