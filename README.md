@@ -64,3 +64,274 @@ export RUST_LOG=relayer=info
 # The 2 channel IDs below "00e2...86ac a161...601e" are from stdout of the command above, "01020304" is the data to send by channel, in Hex format.
 ./target/release/cli appia send-packet 1 1000 bank 00e2e14470ed9a017f586dfe6b76bb0871a8c91c3151778de110db3dfcc286ac bank a1611bcd0ba368e921b1bd3eb4aa66534429b14837725e8cef28182c25db601e 01020304
 ```
+
+### How the Demo Commands Implemented in Souce Code
+* In cli, substrate-subxt invokes the pallet's callable functions by the macro ```substrate_subxt_proc_macro::Call```. Please refer to document [substrate_subxt_proc_macro::Call](https://docs.rs/substrate-subxt-proc-macro/0.12.0/substrate_subxt_proc_macro/derive.Call.html) for details.
+
+#### Creating a Client
+```
+USAGE:
+    cli <CHAIN> create-client <chain-name>
+```
+
+After the command is triggered, the following functions are executed in sequence.
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/cli/src/main.rs
+async fn create_client(
+    ...
+) -> Result<(), Box<dyn Error>> {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/template/src/lib.rs
+pub fn test_create_client(
+    ...
+) -> dispatch::DispatchResult {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/ibc/src/lib.rs
+pub fn create_client(
+	...
+) -> dispatch::DispatchResult {
+	...
+}	
+
+```
+
+#### Binding a Port
+```
+USAGE:
+    cli <CHAIN> bind-port <identifier>
+```
+
+After the command is triggered, the following functions are executed in sequence.
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/cli/src/main.rs
+async fn bind_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn Error>> {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/template/src/lib.rs
+pub fn test_bind_port(origin, identifier: Vec<u8>) -> dispatch::DispatchResult {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/ibc/src/lib.rs
+pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
+	...
+}
+```
+
+#### Relaying
+```
+USAGE:
+    relayer --config <FILE>
+```
+
+After the command is triggered, the following function keep scanning the 2 chains(A & B) for the jobs:
+* Block header synchronization
+* Connection handshakes
+* Channel handshakes
+* Packet flow
+
+```rust
+async fn relay(
+    ...
+) -> Result<(), Box<dyn Error>> {
+    ...
+
+    // Block header synchronization
+    // For the 2 parties on inter-blockchain communication, if one chain(counterparty_client) doesn't have latest block header of the other chain(client).
+    if counterparty_client_state.latest_height < block_number {
+        ...
+    }
+    ...
+    
+    // Scanning the 2 chains' connection state
+    // If it detects any party of the 2 can move connection opening handshakes state forward, it sends a request to the corresponding party. 
+    for connection in client_state.connections.iter() {
+        ...
+        // If current handshake state is (A,B)->(INIT, none), it sends a request to chain B, which converts the handshake state to (INIT, TRYOPEN)  
+        if connection_end.state == ConnectionState::Init
+            && remote_connection_end.state == ConnectionState::None {
+            ...    
+        }
+        // If current handshake state is (A,B)->(INIT, TRYOPEN), it sends a request to chain B, which converts the handshake state to (OPEN, TRYOPEN)  
+        else if connection_end.state == ConnectionState::TryOpen
+            && remote_connection_end.state == ConnectionState::Init
+        {
+            ...
+        }
+        // If current handshake state is (A,B)->(OPEN, TRYOPEN), it sends a request to chain B, which converts the handshake state to (OPEN, OPEN)  
+        else if connection_end.state == ConnectionState::Open
+            && remote_connection_end.state == ConnectionState::TryOpen {
+            ...    
+        }
+    }
+
+    ...
+
+    // Scanning the 2 chains' channel state
+    // If it detects any party of the 2 can move channel opening handshakes state forward, it sends a request to the corresponding party.     
+    for channel in client_state.channels.iter() {
+        ...
+        // If current handshake state is (A,B)->(INIT, none), it sends a request to chain B, which converts the handshake state to (INIT, TRYOPEN)  
+        if channel_end.state == ChannelState::Init && remote_channel_end.state == ChannelState::None {
+            ...    
+        }
+        // If current handshake state is (A,B)->(INIT, TRYOPEN), it sends a request to chain B, which converts the handshake state to (OPEN, TRYOPEN)  
+        else if channel_end.state == ChannelState::TryOpen
+            && remote_channel_end.state == ChannelState::Init
+        {
+            ...
+        }
+        // If current handshake state is (A,B)->(OPEN, TRYOPEN), it sends a request to chain B, which converts the handshake state to (OPEN, OPEN)  
+        else if channel_end.state == ChannelState::Open
+            && remote_channel_end.state == ChannelState::TryOpen {
+            ...    
+        }    
+    }
+
+    // Scanning the 2 events in packet flow: RawEvent::SendPacket, RawEvent::RecvPacket
+    // If it detects either event from one party(chain A), it sends corresponding request to the other party(chain B) to move the packet flow forward
+    for event in events.into_iter() {
+        match event.event {
+            node_runtime::Event::pallet_ibc(pallet_ibc::RawEvent::SendPacket(  // Detects event RawEvent::SendPacket from one party(chain A), who initializes sending packet 
+                ...
+            ) {
+                ...
+                let datagram = Datagram::PacketRecv {
+                    ...
+                };
+                tx.send(datagram).unwrap(); // Sends the packet to the other party(chain B)
+            }
+            node_runtime::Event::pallet_ibc(pallet_ibc::RawEvent::RecvPacket( // Detects event RawEvent::RecvPacket, an acknowledgement, from the other party(chain B), who acknowledges after receiving the packet 
+                ...
+            )) => {
+                ...
+                let datagram = Datagram::PacketAcknowledgement {
+                    ...
+                }
+                };
+                tx.send(datagram).unwrap(); // Sends the acknowledgement to chain A
+            }
+        ...
+    }
+}
+```
+
+#### Opening a Connection
+```
+USAGE:
+    cli <CHAIN> conn-open-init <client-identifier> <counterparty-client-identifier>
+```
+
+After the command is triggered, the following functions are executed in sequence.
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/cli/src/main.rs
+async fn conn_open_init(
+    ...
+) -> Result<(), Box<dyn Error>> {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/template/src/lib.rs
+pub fn test_conn_open_init(
+    ...
+) -> dispatch::DispatchResult {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/ibc/src/lib.rs
+pub fn conn_open_init(
+    ...
+) -> dispatch::DispatchResult {
+	...
+}
+```
+
+#### Opening a Channel
+```
+USAGE:
+    cli <CHAIN> chan-open-init [FLAGS] <connection-identifier> <port-identifier> <counterparty-port-identifier>
+```
+
+After the command is triggered, the following functions are executed in sequence.
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/cli/src/main.rs
+async fn chan_open_init(
+    ...
+) -> Result<(), Box<dyn Error>> {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/template/src/lib.rs
+pub fn test_chan_open_init(
+    ...
+) -> dispatch::DispatchResult {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/ibc/src/lib.rs
+pub fn chan_open_init(
+    ...
+) -> dispatch::DispatchResult {
+	...
+}
+```
+
+#### Sending a Packet
+```
+USAGE:
+    cli <CHAIN> send-packet <sequence> <timeout-height> <source-port> <source-channel> <dest-port> <dest-channel> <data>
+```
+
+After the command is triggered, the following functions are executed in sequence.
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/cli/src/main.rs
+async fn send_packet(
+    ...
+) -> Result<(), Box<dyn Error>> {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/template/src/lib.rs
+pub fn test_send_packet(
+    ...
+) -> dispatch::DispatchResult {
+    ...
+}
+```
+
+```rust
+// https://github.com/cdot-network/ibc-demo/tree/master/pallets/ibc/src/lib.rs
+pub fn send_packet(
+    ...
+) -> dispatch::DispatchResult {
+	...
+}
+```
