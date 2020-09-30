@@ -194,6 +194,7 @@ async fn relay(
     let counterparty_client_state = counterparty_client
         .client_states(counterparty_client_identifier, None)
         .await?;
+    // For the 2 parties on inter-blockchain communication, if one chain(counterparty_client) doesn't have latest block of the other chain(client).
     if counterparty_client_state.latest_height < block_number {
         for height in counterparty_client_state.latest_height + 1..=block_number {
             let hash = client.block_hash(Some(BlockNumber::from(height))).await?;
