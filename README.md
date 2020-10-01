@@ -47,25 +47,55 @@ cargo build --release
 
 Start demo chains and send packet via IBC protocol:
 
+Open a terminal and run the following command to start a test chain called appia.
 ```bash
 ./target/release/node-template --base-path /tmp/chain-appia --dev
+```
+
+Open another terminal and start the flaminia test chain.
+```bash
 ./target/release/node-template --base-path /tmp/chain-flaminia --dev --port 20333 --ws-port 8844
+```
+
+Create a client of flaminia chain on appia chain, and then create a client of appia chain on flaminia.
+```bash
 ./target/release/cli appia create-client flaminia
 ./target/release/cli flaminia create-client appia
+```
+
+Bind ports for two chains.
+```bash
 ./target/release/cli appia bind-port bank
 ./target/release/cli flaminia bind-port bank
 # ./target/release/cli appia release-port bank // don't
-export RUST_LOG=relayer=info
-./target/release/relayer -c relayer/config.toml
-# The 2 client IDs below "53a9...fa10 779c...8e03" are from "relayer/config.toml"
-./target/release/cli appia conn-open-init 53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10 779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03
-# The connection ID below "d93f...bd11" is from the stdout of the command above
-./target/release/cli appia chan-open-init d93fc49e1b2087234a1e2fc204b500da5d16874e631e761bdab932b37907bd11 bank bank
-# The 2 channel IDs below "00e2...86ac a161...601e" are from stdout of the command above, "01020304" is the data to send by channel, in Hex format.
-./target/release/cli appia send-packet 1 1000 bank 00e2e14470ed9a017f586dfe6b76bb0871a8c91c3151778de110db3dfcc286ac bank a1611bcd0ba368e921b1bd3eb4aa66534429b14837725e8cef28182c25db601e 01020304
 ```
 
-### How the Demo Commands Implemented in Souce Code
+Open a new terminal and run relayer.
+```bash
+export RUST_LOG=relayer=info
+./target/release/relayer -c relayer/config.toml
+```
+
+Use the cli tool to initiate a connection.
+The 2 client IDs below "53a9...fa10 779c...8e03" are from "relayer/config.toml"
+```bash
+./target/release/cli appia conn-open-init 53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10 779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03
+```
+
+When the log shows that the connection status of both chains is open, initiate a channel handshake.
+The connection ID below "d93f...bd11" is from the stdout of the command above
+```bash
+./target/release/cli appia chan-open-init d93fc49e1b2087234a1e2fc204b500da5d16874e631e761bdab932b37907bd11 bank bank
+```
+
+When the log shows that the channel status of both chains is open, you can send cross-chain messages as the following command.
+The 2 channel IDs below "00e2...86ac a161...601e" are from stdout of the command above, "01020304" is the data to send by channel, in Hex format.
+```bash
+./target/release/cli appia send-packet 1 1000 bank 00e2e14470ed9a017f586dfe6b76bb0871a8c91c3151778de110db3dfcc286ac bank a1611bcd0ba368e921b1bd3eb4aa66534429b14837725e8cef28182c25db601e 01020304
+```
+After some blocks, you can see that the flamenia log shows that the packet has been received.
+
+### How the Demo Commands Implemented in Source Code
 * In cli, substrate-subxt invokes the pallet's callable functions by the macro ```substrate_subxt_proc_macro::Call```. Please refer to document [substrate_subxt_proc_macro::Call](https://docs.rs/substrate-subxt-proc-macro/0.12.0/substrate_subxt_proc_macro/derive.Call.html) for details.
 
 #### Creating a Client
