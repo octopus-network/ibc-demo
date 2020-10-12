@@ -10,7 +10,7 @@ pallet-ibc provides IBC support and the template pallet contains the demo logic 
 
 And here is a [glue package](https://github.com/cdot-network/ibc-demo/tree/master/calls) that allows an RPC client based on substrate-subxt to interact with the demo chain through RPC.
 
-The repository also includes implementation of [relayer process](https://github.com/cdot-network/ibc-demo/tree/master/relayer)(defined in [ICS 018](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms)) and a [cli tool](https://github.com/cdot-network/ibc-demo/tree/master/cli) to make the cross-chain work.
+The repository also includes implementation of [relayer process](https://github.com/cdot-network/ibc-demo/tree/master/relayer) defined in [ICS 018](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms) and a [cli tool](https://github.com/cdot-network/ibc-demo/tree/master/cli) to make the cross-chain work.
 
 ## Local Development
 
