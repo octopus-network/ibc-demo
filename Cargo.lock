@@ -3758,7 +3758,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-ibc"
-version = "2.0.0"
+version = "2.0.0-pre.0"
 dependencies = [
  "finality-grandpa",
  "frame-support",

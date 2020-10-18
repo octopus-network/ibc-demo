@@ -235,7 +235,7 @@ async fn relay(
         debug!("[{}] connection_end: {:#?}", chain_name, connection_end);
         let remote_connection_end = counterparty_client
             .connections(
-                connection_end.counterparty_connection_identifier,
+                connection_end.counterparty_connection_id,
                 counterparty_block_hash,
             )
             .await?;
@@ -265,7 +265,7 @@ async fn relay(
             let key = connections.key(&client.metadata())?;
             let proof_init = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ConnOpenTry {
-                desired_identifier: connection_end.counterparty_connection_identifier,
+                desired_identifier: connection_end.counterparty_connection_id,
                 counterparty_connection_identifier: *connection,
                 counterparty_client_identifier: client_identifier,
                 client_identifier: counterparty_client_identifier,
@@ -289,7 +289,7 @@ async fn relay(
             let key = connections.key(&client.metadata())?;
             let proof_try = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ConnOpenAck {
-                identifier: connection_end.counterparty_connection_identifier,
+                identifier: connection_end.counterparty_connection_id,
                 version: vec![],
                 proof_try: StorageProof::new(proof_try.proof.into_iter().map(|b| b.0).collect()),
                 proof_consensus: StorageProof::empty(),
@@ -307,7 +307,7 @@ async fn relay(
             let key = connections.key(&client.metadata())?;
             let proof_ack = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ConnOpenConfirm {
-                identifier: connection_end.counterparty_connection_identifier,
+                identifier: connection_end.counterparty_connection_id,
                 proof_ack: StorageProof::new(proof_ack.proof.into_iter().map(|b| b.0).collect()),
                 proof_height: block_number,
             };
@@ -352,7 +352,7 @@ async fn relay(
             let datagram = Datagram::ChanOpenTry {
                 order: channel_end.ordering,
                 // connection_hops: channel_end.connection_hops.into_iter().rev().collect(), // ??
-                connection_hops: vec![connection_end.counterparty_connection_identifier],
+                connection_hops: vec![connection_end.counterparty_connection_id],
                 port_identifier: channel_end.counterparty_port_identifier,
                 channel_identifier: channel_end.counterparty_channel_identifier,
                 counterparty_port_identifier: channel.0.clone(),
