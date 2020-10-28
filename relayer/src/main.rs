@@ -265,12 +265,12 @@ async fn relay(
             let key = connections.key(&client.metadata())?;
             let proof_init = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ConnOpenTry {
-                desired_identifier: connection_end.counterparty_connection_id,
-                counterparty_connection_identifier: *connection,
-                counterparty_client_identifier: client_identifier,
-                client_identifier: counterparty_client_identifier,
+                connection_id: connection_end.counterparty_connection_id,
+                counterparty_connection_id: *connection,
+                counterparty_client_id: client_identifier,
+                client_id: counterparty_client_identifier,
                 version: vec![],
-                counterparty_version: vec![],
+                counterparty_version: connection_end.version,
                 proof_init: StorageProof::new(proof_init.proof.into_iter().map(|b| b.0).collect()),
                 proof_consensus: StorageProof::new(
                     proof_consensus.proof.into_iter().map(|b| b.0).collect(),
