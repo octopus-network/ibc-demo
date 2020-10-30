@@ -289,7 +289,8 @@ async fn relay(
             let key = connections.key(&client.metadata())?;
             let proof_try = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ConnOpenAck {
-                identifier: connection_end.counterparty_connection_id,
+                connection_id: connection_end.counterparty_connection_id,
+                counterparty_connection_id: connection_end.client_id,
                 version: vec![],
                 proof_try: StorageProof::new(proof_try.proof.into_iter().map(|b| b.0).collect()),
                 proof_consensus: StorageProof::empty(),
@@ -307,7 +308,7 @@ async fn relay(
             let key = connections.key(&client.metadata())?;
             let proof_ack = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ConnOpenConfirm {
-                identifier: connection_end.counterparty_connection_id,
+                connection_id: connection_end.counterparty_connection_id,
                 proof_ack: StorageProof::new(proof_ack.proof.into_iter().map(|b| b.0).collect()),
                 proof_height: block_number,
             };
