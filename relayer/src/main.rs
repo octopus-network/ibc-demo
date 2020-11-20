@@ -208,7 +208,7 @@ async fn relay(
             if let Some(signed_block) = signed_block {
                 if let Some(justification) = signed_block.justification {
                     let datagram = Datagram::ClientUpdate {
-                        identifier: counterparty_client_identifier,
+                        client_id: counterparty_client_identifier,
                         header: Header {
                             height: signed_block.block.header.number,
                             block_hash: signed_block.block.header.hash(),
@@ -354,11 +354,11 @@ async fn relay(
                 order: channel_end.ordering,
                 // connection_hops: channel_end.connection_hops.into_iter().rev().collect(), // ??
                 connection_hops: vec![connection_end.counterparty_connection_id],
-                port_identifier: channel_end.counterparty_port_identifier,
-                channel_identifier: channel_end.counterparty_channel_identifier,
-                counterparty_port_identifier: channel.0.clone(),
-                counterparty_channel_identifier: channel.1,
-                version: channel_end.version.clone(),
+                port_id: channel_end.counterparty_port_identifier,
+                channel_id: channel_end.counterparty_channel_identifier,
+                counterparty_port_id: channel.0.clone(),
+                counterparty_channel_id: channel.1,
+                channel_version: channel_end.version.clone(),
                 counterparty_version: channel_end.version,
                 proof_init: StorageProof::new(proof_init.proof.into_iter().map(|b| b.0).collect()),
                 proof_height: block_number,
@@ -374,8 +374,8 @@ async fn relay(
             let key = channels.key(&client.metadata())?;
             let proof_try = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ChanOpenAck {
-                port_identifier: channel_end.counterparty_port_identifier,
-                channel_identifier: channel_end.counterparty_channel_identifier,
+                port_id: channel_end.counterparty_port_identifier,
+                channel_id: channel_end.counterparty_channel_identifier,
                 version: remote_channel_end.version,
                 proof_try: StorageProof::new(proof_try.proof.into_iter().map(|b| b.0).collect()),
                 proof_height: block_number,
@@ -391,8 +391,8 @@ async fn relay(
             let key = channels.key(&client.metadata())?;
             let proof_ack = client.read_proof(vec![key], Some(block_hash)).await?;
             let datagram = Datagram::ChanOpenConfirm {
-                port_identifier: channel_end.counterparty_port_identifier,
-                channel_identifier: channel_end.counterparty_channel_identifier,
+                port_id: channel_end.counterparty_port_identifier,
+                channel_id: channel_end.counterparty_channel_identifier,
                 proof_ack: StorageProof::new(proof_ack.proof.into_iter().map(|b| b.0).collect()),
                 proof_height: block_number,
             };
