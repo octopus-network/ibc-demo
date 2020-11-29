@@ -115,6 +115,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "anomaly"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "550632e31568ae1a5f47998c3aa48563030fc49b9ec91913ca337cf64fbc5ccb"
+dependencies = [
+ "backtrace",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -757,6 +766,7 @@ dependencies = [
 name = "cli"
 version = "0.1.0"
 dependencies = [
+ "anomaly",
  "async-std",
  "calls",
  "clap",
@@ -767,6 +777,7 @@ dependencies = [
  "sp-finality-grandpa",
  "sp-keyring",
  "substrate-subxt",
+ "thiserror",
 ]
 
 [[package]]
@@ -3758,7 +3769,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-ibc"
-version = "2.0.0-pre.1"
+version = "2.0.0-pre.2"
 dependencies = [
  "finality-grandpa",
  "frame-support",
