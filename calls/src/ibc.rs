@@ -14,6 +14,20 @@ use substrate_subxt::{
 pub trait Ibc: System + Balances {}
 
 #[derive(Encode, Store)]
+pub struct ClientStatesV2Store<T: Ibc> {
+    #[store(returns = Vec<u8>)]
+    pub key: Vec<u8>,
+    pub _runtime: PhantomData<T>,
+}
+
+#[derive(Encode, Store)]
+pub struct ConsensusStatesV2Store<T: Ibc> {
+    #[store(returns = Vec<u8>)]
+    pub key: (Vec<u8>, Vec<u8>),
+    pub _runtime: PhantomData<T>,
+}
+
+#[derive(Encode, Store)]
 pub struct ClientStatesStore<T: Ibc> {
     #[store(returns = pallet_ibc::grandpa::client_state::ClientState)]
     pub key: H256,
@@ -59,4 +73,10 @@ pub struct AcknowledgementsStore<T: Ibc> {
 pub struct SubmitDatagramCall<T: Ibc> {
     pub _runtime: PhantomData<T>,
     pub datagram: pallet_ibc::Datagram,
+}
+
+#[derive(Encode, Call)]
+pub struct DeliverCall<T: Ibc> {
+    pub _runtime: PhantomData<T>,
+    pub msg: pallet_ibc::informalsystems::ClientMsg,
 }

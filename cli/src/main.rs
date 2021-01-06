@@ -5,20 +5,83 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use lazy_static::lazy_static;
 // use rand::RngCore;
 use calls::{
+    ibc::DeliverCallExt,
     template::{
         TestBindPortCallExt, TestChanOpenInitCallExt, TestConnOpenInitCallExt,
-        TestCreateClientCallExt, TestReleasePortCallExt, TestSendPacketCallExt,
+        TestReleasePortCallExt, TestSendPacketCallExt,
     },
     NodeRuntime as Runtime,
 };
+use error::{ValidationError, ValidationKind};
 use sp_core::{storage::StorageKey, Blake2Hasher, Hasher, H256};
 use sp_finality_grandpa::{AuthorityList, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
 use sp_keyring::AccountKeyring;
 use std::collections::HashMap;
 use std::error::Error;
-use substrate_subxt::{BlockNumber, ClientBuilder, PairSigner};
-use anomaly::{BoxError, Context};
-use error::{ValidationError, ValidationKind};
+use substrate_subxt::{ClientBuilder, PairSigner};
+
+use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics02_client::client_def::AnyConsensusState;
+use ibc::ics02_client::height::Height;
+use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::ics07_tendermint::client_state::ClientState;
+use ibc::ics10_grandpa::client_state::ClientState as GRANDPAClientState;
+use ibc::ics10_grandpa::consensus_state::ConsensusState as GRANDPAConsensusState;
+use ibc::ics24_host::identifier::ChainId;
+use std::convert::TryInto;
+use std::str::FromStr;
+use std::time::Duration;
+use tendermint::account::Id as AccountId;
+use tendermint::block::signed_header::SignedHeader;
+use tendermint::block::Header;
+use tendermint::Time;
+use tendermint::{block, consensus, evidence, public_key::Algorithm};
+use tendermint_proto::Protobuf;
+
+pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
+    serde_json::from_str::<SignedHeader>(include_str!("../signed_header.json"))
+        .unwrap()
+        .header
+}
+
+pub fn default_consensus_params() -> consensus::Params {
+    consensus::Params {
+        block: block::Size {
+            max_bytes: 22020096,
+            max_gas: -1, // Tendetmint-go also has TimeIotaMs: 1000, // 1s
+        },
+        evidence: evidence::Params {
+            max_age_num_blocks: 100000,
+            max_age_duration: evidence::Duration(std::time::Duration::new(48 * 3600, 0)),
+            max_bytes: 0,
+        },
+        validator: consensus::params::ValidatorParams {
+            pub_key_types: vec![Algorithm::Ed25519],
+        },
+        version: Some(consensus::params::VersionParams::default()),
+    }
+}
+
+pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
+    AnyClientState::Tendermint(
+        ClientState::new(
+            tm_header.chain_id.to_string(),
+            Default::default(),
+            Duration::from_secs(64000),
+            Duration::from_secs(128000),
+            Duration::from_millis(3000),
+            Height::new(
+                ChainId::chain_version(tm_header.chain_id.as_str()),
+                u64::from(tm_header.height),
+            ),
+            Height::zero(),
+            vec!["".to_string()],
+            false,
+            false,
+        )
+        .unwrap(),
+    )
+}
 
 lazy_static! {
     static ref ENDPOINTS: HashMap<&'static str, &'static str> = {
@@ -29,20 +92,49 @@ lazy_static! {
     };
 }
 
+fn get_dummy_account_id_raw() -> String {
+    "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
+}
+
+pub fn get_dummy_account_id() -> AccountId {
+    AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
+}
+
 fn execute(matches: ArgMatches) {
     let chain = matches.value_of("CHAIN").unwrap();
     let addr = ENDPOINTS.get(chain).unwrap();
     match matches.subcommand() {
+        ("ibc-create-client", Some(_matches)) => {
+            let signer = get_dummy_account_id();
+
+            let tm_header = get_dummy_tendermint_header();
+            let tm_client_state = get_dummy_tendermint_client_state(tm_header.clone());
+
+            let msg = MsgCreateAnyClient::new(
+                tm_client_state,
+                AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
+                signer,
+            )
+            .unwrap();
+            let data = msg.encode_vec().unwrap();
+            let msg = pallet_ibc::informalsystems::ClientMsg::CreateClient(data);
+
+            let result = async_std::task::block_on(deliver(&addr, msg));
+            println!("create_client: {:?}", result);
+        }
         ("create-client", Some(matches)) => {
             let chain_name = matches
                 .value_of("chain-name")
                 .expect("The name of chain is required; qed");
-            let identifier = Blake2Hasher::hash(chain.as_bytes());
-            println!("identifier: {:?}", identifier);
+            // let identifier = Blake2Hasher::hash(chain.as_bytes());
+            // println!("identifier: {:?}", identifier);
 
             let counterparty_addr = ENDPOINTS.get(chain_name).unwrap();
-            let result =
-                async_std::task::block_on(create_client(&addr, &counterparty_addr, identifier));
+            let result = async_std::task::block_on(create_client(
+                &addr,
+                &counterparty_addr,
+                chain_name.to_string(),
+            ));
             println!("create_client: {:?}", result);
         }
         ("conn-open-init", Some(matches)) => {
@@ -275,7 +367,6 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
     Ok(())
 }
 
-
 fn main() {
     let matches = App::new("cli")
         .author("Cdot Network <ys@cdot.network>")
@@ -284,6 +375,13 @@ fn main() {
         .arg(Arg::with_name("CHAIN")
              .help("Sets the chain to be operated")
              .required(true))
+        .subcommands(vec![SubCommand::with_name("ibc-create-client")
+            .about("Create a new client using ibc-rs")
+            .args_from_usage(
+                "
+<chain-name> 'The name of counterparty demo chain'
+",
+            )])
         .subcommands(vec![SubCommand::with_name("create-client")
             .about("Create a new client")
             .args_from_usage(
@@ -340,10 +438,23 @@ fn main() {
     execute(matches);
 }
 
+async fn deliver(
+    addr: &str,
+    msg: pallet_ibc::informalsystems::ClientMsg,
+) -> Result<(), Box<dyn Error>> {
+    let signer = PairSigner::new(AccountKeyring::Bob.pair());
+    let client = ClientBuilder::<Runtime>::new()
+        .set_url(addr.clone())
+        .build()
+        .await?;
+    let _result = client.deliver(&signer, msg).await?;
+    Ok(())
+}
+
 async fn create_client(
     addr: &str,
     counterparty_addr: &str,
-    identifier: H256,
+    identifier: String,
 ) -> Result<(), Box<dyn Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
 
@@ -352,36 +463,38 @@ async fn create_client(
         .build()
         .await?;
 
-    let genesis_hash = counterparty_client
-        .block_hash(Some(BlockNumber::from(0u32)))
-        .await?;
-    println!("counterparty genesis_hash: {:?}", genesis_hash);
-    let genesis_header = counterparty_client.header(genesis_hash).await?.unwrap();
-    println!("counterparty genesis_header: {:?}", genesis_header);
+    let block_hash = counterparty_client.finalized_head().await?;
+    println!("counterparty latest finalized block_hash: {:?}", block_hash);
+    let latest_header = counterparty_client.header(Some(block_hash)).await?.unwrap();
+    println!("counterparty latest_header: {:?}", latest_header);
     let storage_key = StorageKey(GRANDPA_AUTHORITIES_KEY.to_vec());
-    let genesis_authorities: AuthorityList = counterparty_client
-        .fetch_unhashed::<VersionedAuthorityList>(storage_key, genesis_hash)
+    let authorities: AuthorityList = counterparty_client
+        .fetch_unhashed::<VersionedAuthorityList>(storage_key, Some(block_hash))
         .await?
         .map(|versioned| versioned.into())
         .unwrap();
-    println!(
-        "counterparty genesis_authorities: {:?}",
-        genesis_authorities
+    println!("counterparty authorities: {:?}", authorities);
+
+    let client_state = AnyClientState::GRANDPA(
+        GRANDPAClientState::new(identifier, latest_header.number.into(), 0, 0, authorities)
+            .unwrap(),
     );
+    let consensus_state = AnyConsensusState::GRANDPA(GRANDPAConsensusState::new(
+        Time::now(),
+        latest_header.state_root,
+    ));
+
+    let tm_signer = get_dummy_account_id();
+    let msg = MsgCreateAnyClient::new(client_state, consensus_state, tm_signer).unwrap();
+    let data = msg.encode_vec().unwrap();
+    let msg = pallet_ibc::informalsystems::ClientMsg::CreateClient(data);
+
     let client = ClientBuilder::<Runtime>::new()
         .set_url(addr)
         .build()
         .await?;
-    let _result = client
-        .test_create_client(
-            &signer,
-            identifier,
-            0,
-            0,
-            genesis_authorities,
-            genesis_header.state_root,
-        )
-        .await?;
+
+    let _result = client.deliver(&signer, msg).await?;
     Ok(())
 }
 
