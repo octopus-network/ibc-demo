@@ -1,11 +1,20 @@
 use calls::{
-    ibc::{self, ChannelsStoreExt, ClientStatesStoreExt, ConnectionsStoreExt, SubmitDatagramCallExt},
+    ibc::{
+        AcknowledgementsStore, ChannelsStore, ChannelsStoreExt, ClientStatesStoreExt,
+        ClientStatesV2StoreExt, ConnectionsStore, ConnectionsStoreExt, ConsensusStatesStore,
+        DeliverCallExt, PacketsStore, SubmitDatagramCallExt,
+    },
     NodeRuntime as Runtime,
 };
 use clap::{App, Arg, ArgMatches};
 use codec::Decode;
+use ibc::ics02_client::client_def::AnyHeader;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics10_grandpa::header::Header as GRANDPAHeader;
+use ibc::ics24_host::identifier::ClientId;
 use log::{debug, error, info};
-use pallet_ibc::{ChannelState, ConnectionState, Datagram, grandpa::header::Header, Packet};
+use pallet_ibc::{grandpa::header::Header, ChannelState, ConnectionState, Datagram, Packet};
 use serde_derive::Deserialize;
 use sp_core::{storage::StorageKey, twox_128, H256};
 use sp_finality_grandpa::GRANDPA_AUTHORITIES_KEY;
@@ -17,12 +26,15 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
+use std::str::FromStr;
 use std::sync::mpsc::{channel, Sender};
 use std::time::Duration;
 use substrate_subxt::{
     system::{AccountStoreExt, System},
     BlockNumber, Client, ClientBuilder, PairSigner, Store,
 };
+use tendermint::account::Id as AccountId;
+use tendermint_proto::Protobuf;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -85,15 +97,15 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
             println!("task: {:?}", task);
             let from = task.from.clone();
             let from_endpoint = &config.chains[&from].endpoint;
-            let from_client_identifier = hex::decode(&config.chains[&from].client_identifier)
-                .and_then(|identifier| Ok(H256::from_slice(&identifier)))
-                .unwrap();
+            // let from_client_identifier = hex::decode(&config.chains[&from].client_identifier)
+            //     .and_then(|identifier| Ok(H256::from_slice(&identifier)))
+            //     .unwrap();
 
             let to = task.to.clone();
             let to_endpoint = &config.chains[&to].endpoint;
-            let to_client_identifier = hex::decode(&config.chains[&to].client_identifier)
-                .and_then(|identifier| Ok(H256::from_slice(&identifier)))
-                .unwrap();
+            // let to_client_identifier = hex::decode(&config.chains[&to].client_identifier)
+            //     .and_then(|identifier| Ok(H256::from_slice(&identifier)))
+            //     .unwrap();
 
             let from_client = ClientBuilder::<Runtime>::new()
                 .set_url(from_endpoint)
@@ -111,6 +123,7 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
 
             let from_client = from_client.clone();
             {
+                let to = to.clone();
                 let to_client = to_client.clone();
                 async_std::task::spawn(async move {
                     loop {
@@ -121,13 +134,13 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                             tx,
                             block_header,
                             &from_client,
-                            from_client_identifier,
+                            from.clone(),
                             &to_client,
-                            to_client_identifier,
+                            to.clone(),
                         )
                         .await
                         {
-                            error!("[{}] failed to relay; error = {}", from, e);
+                            error!("[{}] failed to relay; error = {}", from.clone(), e);
                         }
                     }
                 });
@@ -142,15 +155,14 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                     .nonce;
                 signer.set_nonce(nonce);
                 loop {
-                    let datagram = rx.recv().unwrap();
-                    match datagram {
-                        Datagram::ClientUpdate { .. } => {
-                            debug!("[relayer => {}] datagram: {:?}", to, datagram)
-                        }
-                        _ => debug!("[relayer => {}] datagram: {:#?}", to, datagram),
-                    }
-                    if let Err(e) = to_client.submit_datagram(&signer, datagram).await {
-                        error!("[relayer => {}] failed to send datagram; error = {}", to, e);
+                    let msg = rx.recv().unwrap();
+                    debug!("[relayer => {}] msg: {:?}", to.clone(), msg);
+                    if let Err(e) = to_client.deliver(&signer, msg).await {
+                        error!(
+                            "[relayer => {}] failed to send msg; error = {}",
+                            to.clone(),
+                            e
+                        );
                     }
                     signer.increment_nonce();
                 }
@@ -162,14 +174,22 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
     })
 }
 
+fn get_dummy_account_id_raw() -> String {
+    "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
+}
+
+pub fn get_dummy_account_id() -> AccountId {
+    AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
+}
+
 async fn relay(
     chain_name: &str,
-    tx: Sender<Datagram>,
+    tx: Sender<pallet_ibc::informalsystems::ClientMsg>,
     block_header: generic::Header<u32, sp_runtime::traits::BlakeTwo256>,
     client: &Client<Runtime>,
-    client_identifier: H256,
+    client_identifier: String,
     counterparty_client: &Client<Runtime>,
-    counterparty_client_identifier: H256,
+    counterparty_client_identifier: String,
 ) -> Result<(), Box<dyn Error>> {
     let mut storage_key = twox_128(b"System").to_vec();
     storage_key.extend(twox_128(b"Events").to_vec());
@@ -182,21 +202,46 @@ async fn relay(
     debug!("[{}] state_root: {:?}", chain_name, state_root);
     debug!("[{}] block_hash: {:?}", chain_name, block_hash);
     // this method is equivalent to queryClientState
-    let client_state = client.client_states(client_identifier, Some(block_hash)).await?;
+    // TODO
+    let data = client
+        .client_states_v2(
+            ClientId::from_str("defaultClient-0")
+                .unwrap()
+                .as_bytes()
+                .to_vec(),
+            Some(block_hash),
+        )
+        .await?;
+    let client_state = AnyClientState::decode_vec(&*data).unwrap();
+    let client_state = match client_state {
+        AnyClientState::GRANDPA(client_state) => client_state,
+        _ => panic!("wrong client state type"),
+    };
 
     let counterparty_block_hash = counterparty_client
-        .block_hash(Some(BlockNumber::from(client_state.latest_height)))
+        .block_hash(Some(BlockNumber::from(client_state.latest_height as u32)))
         .await?;
     info!(
         "[{}] client latest height: {}",
         chain_name, client_state.latest_height
     );
-    let counterparty_client_state = counterparty_client
-        .client_states(counterparty_client_identifier, None)
+    let data = counterparty_client
+        .client_states_v2(
+            ClientId::from_str("defaultClient-0")
+                .unwrap()
+                .as_bytes()
+                .to_vec(),
+            None,
+        )
         .await?;
+    let counterparty_client_state = AnyClientState::decode_vec(&*data).unwrap();
+    let counterparty_client_state = match counterparty_client_state {
+        AnyClientState::GRANDPA(client_state) => client_state,
+        _ => panic!("wrong client state type"),
+    };
     // For the 2 parties on inter-blockchain communication, if one chain(counterparty_client) doesn't have latest block of the other chain(client).
-    if counterparty_client_state.latest_height < block_number {
-        for height in counterparty_client_state.latest_height + 1..=block_number {
+    if (counterparty_client_state.latest_height as u32) < block_number {
+        for height in counterparty_client_state.latest_height as u32 + 1..=block_number {
             let hash = client.block_hash(Some(BlockNumber::from(height))).await?;
             let signed_block = client.block(hash).await?;
             let authorities_proof = client
@@ -206,24 +251,29 @@ async fn relay(
                 )
                 .await?;
             if let Some(signed_block) = signed_block {
-                if let Some(justification) = signed_block.justification {
-                    let datagram = Datagram::ClientUpdate {
-                        client_id: counterparty_client_identifier,
-                        header: Header {
-                            height: signed_block.block.header.number,
-                            block_hash: signed_block.block.header.hash(),
-                            commitment_root: signed_block.block.header.state_root,
-                            justification,
-                            authorities_proof: StorageProof::new(
-                                authorities_proof.proof.into_iter().map(|b| b.0).collect(),
-                            ),
-                        },
-                    };
-                    tx.send(datagram).unwrap();
-                }
+                let tm_signer = get_dummy_account_id();
+                let header = AnyHeader::GRANDPA(GRANDPAHeader {
+                    height: signed_block.block.header.number.into(),
+                    commitment_root: signed_block.block.header.state_root,
+                    block_hash: signed_block.block.header.hash(),
+                    justification: signed_block.justification,
+                    authorities_proof: StorageProof::new(
+                        authorities_proof.proof.into_iter().map(|b| b.0).collect(),
+                    ),
+                });
+                let msg = MsgUpdateAnyClient::new(
+                    ClientId::from_str(&counterparty_client_identifier).unwrap(),
+                    header,
+                    tm_signer,
+                );
+                let data = msg.encode_vec().unwrap();
+                let msg = pallet_ibc::informalsystems::ClientMsg::UpdateClient(data);
+
+                tx.send(msg).unwrap();
             }
         }
     }
+    /*
     if client_state.connections.len() > 0 {
         info!(
             "[{}] connections: {:?}",
@@ -252,13 +302,13 @@ async fn relay(
             && remote_connection_end.state == ConnectionState::None
         {
             // this is equivalent to queryChainConsensusState
-            let consensus_states = ibc::ConsensusStatesStore::<Runtime> {
+            let consensus_states = ConsensusStatesStore::<Runtime> {
                 key: (client_identifier, block_number),
                 _runtime: Default::default(),
             };
             let key = consensus_states.key(&client.metadata())?;
             let proof_consensus = client.read_proof(vec![key], Some(block_hash)).await?;
-            let connections = ibc::ConnectionsStore::<Runtime> {
+            let connections = ConnectionsStore::<Runtime> {
                 key: *connection,
                 _runtime: Default::default(),
             };
@@ -282,7 +332,7 @@ async fn relay(
         } else if connection_end.state == ConnectionState::TryOpen
             && remote_connection_end.state == ConnectionState::Init
         {
-            let connections = ibc::ConnectionsStore::<Runtime> {
+            let connections = ConnectionsStore::<Runtime> {
                 key: *connection,
                 _runtime: Default::default(),
             };
@@ -301,7 +351,7 @@ async fn relay(
         } else if connection_end.state == ConnectionState::Open
             && remote_connection_end.state == ConnectionState::TryOpen
         {
-            let connections = ibc::ConnectionsStore::<Runtime> {
+            let connections = ConnectionsStore::<Runtime> {
                 key: *connection,
                 _runtime: Default::default(),
             };
@@ -344,7 +394,7 @@ async fn relay(
             let connection_end = client
                 .connections(channel_end.connection_hops[0], Some(block_hash))
                 .await?;
-            let channels = ibc::ChannelsStore::<Runtime> {
+            let channels = ChannelsStore::<Runtime> {
                 key: channel.clone(),
                 _runtime: Default::default(),
             };
@@ -367,7 +417,7 @@ async fn relay(
         } else if channel_end.state == ChannelState::TryOpen
             && remote_channel_end.state == ChannelState::Init
         {
-            let channels = ibc::ChannelsStore::<Runtime> {
+            let channels = ChannelsStore::<Runtime> {
                 key: channel.clone(),
                 _runtime: Default::default(),
             };
@@ -384,7 +434,7 @@ async fn relay(
         } else if channel_end.state == ChannelState::Open
             && remote_channel_end.state == ChannelState::TryOpen
         {
-            let channels = ibc::ChannelsStore::<Runtime> {
+            let channels = ChannelsStore::<Runtime> {
                 key: channel.clone(),
                 _runtime: Default::default(),
             };
@@ -412,7 +462,8 @@ async fn relay(
         .filter_map(|(_key, data)| data.as_ref().map(|data| Decode::decode(&mut &data.0[..])))
         .filter_map(|result: Result<EventRecords, codec::Error>| result.ok())
         .flatten()
-        .collect::<Vec<frame_system::EventRecord<node_runtime::Event, <Runtime as System>::Hash>>>();
+        .collect::<Vec<frame_system::EventRecord<node_runtime::Event, <Runtime as System>::Hash>>>(
+        );
     for event in events.into_iter() {
         match event.event {
             node_runtime::Event::pallet_ibc(pallet_ibc::RawEvent::SendPacket(
@@ -434,7 +485,7 @@ async fn relay(
                     dest_channel,
                     data,
                 };
-                let packets = ibc::PacketsStore::<Runtime> {
+                let packets = PacketsStore::<Runtime> {
                     key: (source_port, source_channel, timeout_height.into()),
                     _runtime: Default::default(),
                 };
@@ -481,7 +532,7 @@ async fn relay(
                     dest_channel,
                     data,
                 };
-                let acknowledgements = ibc::AcknowledgementsStore::<Runtime> {
+                let acknowledgements = AcknowledgementsStore::<Runtime> {
                     key: (source_port, source_channel, timeout_height.into()),
                     _runtime: Default::default(),
                 };
@@ -498,6 +549,7 @@ async fn relay(
             _ => {}
         }
     }
+    */
 
     Ok(())
 }

@@ -27,3 +27,15 @@ sp-keyring = '2.0.0'
 sp-runtime = '2.0.0'
 sp-storage = '2.0.0'
 sp-trie = '2.0.0'
+
+[dependencies.ibc]
+default-features = false
+git = 'https://github.com/cdot-network/ibc-rs.git'
+package = 'ibc'
+branch = 'ys'
+
+[dependencies.tendermint]
+version = "=0.17.0"
+
+[dependencies.tendermint-proto]
+version = "=0.17.0"
