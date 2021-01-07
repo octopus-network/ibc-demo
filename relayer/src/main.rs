@@ -10,7 +10,7 @@ use clap::{App, Arg, ArgMatches};
 use codec::Decode;
 use ibc::ics02_client::client_def::AnyHeader;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics02_client::msgs::update_client::{self, MsgUpdateAnyClient};
 use ibc::ics10_grandpa::header::Header as GRANDPAHeader;
 use ibc::ics24_host::identifier::ClientId;
 use log::{debug, error, info};
@@ -97,15 +97,11 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
             println!("task: {:?}", task);
             let from = task.from.clone();
             let from_endpoint = &config.chains[&from].endpoint;
-            // let from_client_identifier = hex::decode(&config.chains[&from].client_identifier)
-            //     .and_then(|identifier| Ok(H256::from_slice(&identifier)))
-            //     .unwrap();
+            let from_client_identifier = config.chains[&from].client_identifier.clone();
 
             let to = task.to.clone();
             let to_endpoint = &config.chains[&to].endpoint;
-            // let to_client_identifier = hex::decode(&config.chains[&to].client_identifier)
-            //     .and_then(|identifier| Ok(H256::from_slice(&identifier)))
-            //     .unwrap();
+            let to_client_identifier = config.chains[&to].client_identifier.clone();
 
             let from_client = ClientBuilder::<Runtime>::new()
                 .set_url(from_endpoint)
@@ -123,7 +119,6 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
 
             let from_client = from_client.clone();
             {
-                let to = to.clone();
                 let to_client = to_client.clone();
                 async_std::task::spawn(async move {
                     loop {
@@ -134,9 +129,9 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                             tx,
                             block_header,
                             &from_client,
-                            from.clone(),
+                            from_client_identifier.clone(),
                             &to_client,
-                            to.clone(),
+                            to_client_identifier.clone(),
                         )
                         .await
                         {
@@ -155,9 +150,12 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                     .nonce;
                 signer.set_nonce(nonce);
                 loop {
-                    let msg = rx.recv().unwrap();
-                    debug!("[relayer => {}] msg: {:?}", to.clone(), msg);
-                    if let Err(e) = to_client.deliver(&signer, msg).await {
+                    let any = rx.recv().unwrap();
+                    debug!("[relayer => {}] msg: {:?}", to.clone(), any);
+                    if let Err(e) = to_client
+                        .deliver(&signer, vec![any], if to == "appia" { 0 } else { 1 })
+                        .await
+                    {
                         error!(
                             "[relayer => {}] failed to send msg; error = {}",
                             to.clone(),
@@ -184,7 +182,7 @@ pub fn get_dummy_account_id() -> AccountId {
 
 async fn relay(
     chain_name: &str,
-    tx: Sender<pallet_ibc::informalsystems::ClientMsg>,
+    tx: Sender<pallet_ibc::informalsystems::Any>,
     block_header: generic::Header<u32, sp_runtime::traits::BlakeTwo256>,
     client: &Client<Runtime>,
     client_identifier: String,
@@ -205,7 +203,7 @@ async fn relay(
     // TODO
     let data = client
         .client_states_v2(
-            ClientId::from_str("defaultClient-0")
+            ClientId::from_str(&counterparty_client_identifier)
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
@@ -227,7 +225,7 @@ async fn relay(
     );
     let data = counterparty_client
         .client_states_v2(
-            ClientId::from_str("defaultClient-0")
+            ClientId::from_str(&client_identifier)
                 .unwrap()
                 .as_bytes()
                 .to_vec(),
@@ -262,14 +260,17 @@ async fn relay(
                     ),
                 });
                 let msg = MsgUpdateAnyClient::new(
-                    ClientId::from_str(&counterparty_client_identifier).unwrap(),
+                    ClientId::from_str(&client_identifier).unwrap(),
                     header,
                     tm_signer,
                 );
                 let data = msg.encode_vec().unwrap();
-                let msg = pallet_ibc::informalsystems::ClientMsg::UpdateClient(data);
+                let any = pallet_ibc::informalsystems::Any {
+                    type_url: update_client::TYPE_URL.to_string(),
+                    value: data,
+                };
 
-                tx.send(msg).unwrap();
+                tx.send(any).unwrap();
             }
         }
     }

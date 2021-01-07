@@ -78,5 +78,6 @@ pub struct SubmitDatagramCall<T: Ibc> {
 #[derive(Encode, Call)]
 pub struct DeliverCall<T: Ibc> {
     pub _runtime: PhantomData<T>,
-    pub msg: pallet_ibc::informalsystems::ClientMsg,
+    pub messages: Vec<pallet_ibc::informalsystems::Any>,
+    pub tmp: u8,
 }

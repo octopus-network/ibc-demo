@@ -50,8 +50,8 @@ Open another terminal and start the flaminia test chain.
 
 Create a client of flaminia chain on appia chain, and then create a client of appia chain on flaminia.
 ```bash
-./target/release/cli appia create-client flaminia
-./target/release/cli flaminia create-client appia
+./target/release/cli appia-client-id create-client flaminia-client-id
+./target/release/cli flaminia-client-id create-client appia-client-id
 ```
 
 Bind ports for two chains.
