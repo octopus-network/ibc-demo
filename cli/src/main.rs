@@ -10,7 +10,7 @@ use calls::{
         TestBindPortCallExt, TestChanOpenInitCallExt, TestConnOpenInitCallExt,
         TestReleasePortCallExt, TestSendPacketCallExt,
     },
-    NodeRuntime as Runtime,
+    NodeTemplateRuntime as Runtime,
 };
 use error::{ValidationError, ValidationKind};
 use sp_core::{storage::StorageKey, Blake2Hasher, Hasher, H256};

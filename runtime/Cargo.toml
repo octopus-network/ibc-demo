@@ -26,6 +26,7 @@ serde = { features = ['derive'], optional = true, version = '1.0.119' }
 
 # local dependencies
 pallet-template = { path = '../pallets/template', default-features = false, version = '3.0.0' }
+pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', default-features = false, branch = 'v3' }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = '3.0.0' }
@@ -93,4 +94,5 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+    'pallet-ibc/std',
 ]

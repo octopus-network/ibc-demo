@@ -3,9 +3,9 @@ use codec::Encode;
 use core::marker::PhantomData;
 use sp_core::H256;
 use substrate_subxt::{
-    balances::{Balances, BalancesEventsDecoder},
+    balances::Balances,
     module,
-    system::{System, SystemEventsDecoder},
+    system::System,
     Call, Store,
 };
 

@@ -1,40 +1,71 @@
 use sp_runtime::{MultiSignature, OpaqueExtrinsic};
 use substrate_subxt::{
-    balances::Balances, contracts::Contracts, extrinsic::DefaultExtra, system::System, Runtime,
+    BasicSessionKeys,
+    extrinsic::DefaultExtra, Runtime,
+    EventTypeRegistry, register_default_type_sizes,
+    balances::{
+        Balances,
+        BalancesEventTypeRegistry,
+    },
+    session::{
+        Session,
+        SessionEventTypeRegistry,
+    },
+    sudo::{
+        Sudo,
+        SudoEventTypeRegistry,
+    },
+    system::{
+        System,
+        SystemEventTypeRegistry,
+    },
 };
 
 pub mod ibc;
 pub mod template;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct NodeRuntime;
+pub struct NodeTemplateRuntime;
 
-impl Runtime for NodeRuntime {
+impl Runtime for NodeTemplateRuntime {
     type Signature = MultiSignature;
     type Extra = DefaultExtra<Self>;
+
+    fn register_type_sizes(event_type_registry: &mut EventTypeRegistry<Self>) {
+        event_type_registry.with_system();
+        event_type_registry.with_balances();
+        event_type_registry.with_session();
+        event_type_registry.with_sudo();
+        register_default_type_sizes(event_type_registry);
+    }
 }
 
-impl System for NodeRuntime {
-    type Index = <node_runtime::Runtime as frame_system::Trait>::Index;
-    type BlockNumber = <node_runtime::Runtime as frame_system::Trait>::BlockNumber;
-    type Hash = <node_runtime::Runtime as frame_system::Trait>::Hash;
-    type Hashing = <node_runtime::Runtime as frame_system::Trait>::Hashing;
-    type AccountId = <node_runtime::Runtime as frame_system::Trait>::AccountId;
-    type Address = Self::AccountId;
-    type Header = <node_runtime::Runtime as frame_system::Trait>::Header;
+impl System for NodeTemplateRuntime {
+    type Index = <node_runtime::Runtime as frame_system::Config>::Index;
+    type BlockNumber = <node_runtime::Runtime as frame_system::Config>::BlockNumber;
+    type Hash = <node_runtime::Runtime as frame_system::Config>::Hash;
+    type Hashing = <node_runtime::Runtime as frame_system::Config>::Hashing;
+    type AccountId = <node_runtime::Runtime as frame_system::Config>::AccountId;
+    type Address = sp_runtime::MultiAddress<Self::AccountId, u32>;
+    type Header = <node_runtime::Runtime as frame_system::Config>::Header;
     type Extrinsic = OpaqueExtrinsic;
-    type AccountData = <node_runtime::Runtime as frame_system::Trait>::AccountData;
+    type AccountData = <node_runtime::Runtime as frame_system::Config>::AccountData;
 }
 
-impl Balances for NodeRuntime {
-    type Balance = <node_runtime::Runtime as pallet_balances::Trait>::Balance;
+impl Balances for NodeTemplateRuntime {
+    type Balance = <node_runtime::Runtime as pallet_balances::Config>::Balance;
 }
 
-impl Contracts for NodeRuntime {}
+impl Session for NodeTemplateRuntime {
+    type ValidatorId = <Self as System>::AccountId;
+    type Keys = BasicSessionKeys;
+}
 
-impl ibc::Ibc for NodeRuntime {}
+impl Sudo for NodeTemplateRuntime {}
 
-impl template::TemplateModule for NodeRuntime {}
+impl ibc::Ibc for NodeTemplateRuntime {}
+
+impl template::TemplateModule for NodeTemplateRuntime {}
 
 #[cfg(test)]
 mod tests {

@@ -4,7 +4,7 @@ use calls::{
         ClientStatesV2StoreExt, ConnectionsStore, ConnectionsStoreExt, ConsensusStatesStore,
         DeliverCallExt, PacketsStore, SubmitDatagramCallExt,
     },
-    NodeRuntime as Runtime,
+    NodeTemplateRuntime as Runtime,
 };
 use clap::{App, Arg, ArgMatches};
 use codec::Decode;
@@ -122,7 +122,7 @@ async fn run(config: &Config) -> Result<(), Box<dyn Error>> {
                 let to_client = to_client.clone();
                 async_std::task::spawn(async move {
                     loop {
-                        let block_header = from_block_headers.next().await;
+                        let block_header = from_block_headers.next().await.unwrap();
                         let tx = tx.clone();
                         if let Err(e) = relay(
                             &from,

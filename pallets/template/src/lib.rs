@@ -6,6 +6,10 @@
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, traits::Get};
 use frame_system::ensure_signed;
+use sp_core::H256;
+use sp_finality_grandpa::{AuthorityList, SetId};
+use sp_std::prelude::*;
+use frame_support::traits::PalletInfo;
 
 #[cfg(test)]
 mod mock;
@@ -14,7 +18,7 @@ mod mock;
 mod tests;
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
-pub trait Config: frame_system::Config {
+pub trait Config: frame_system::Config + pallet_ibc::Config {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 }
@@ -99,5 +103,157 @@ decl_module! {
 				},
 			}
 		}
+
+		#[weight = 0]
+		pub fn test_create_client(
+			origin,
+			identifier: H256,
+			height: u32,
+			set_id: SetId,
+			authorities: AuthorityList,
+			root: H256
+		) -> dispatch::DispatchResult {
+			let _who = ensure_signed(origin)?;
+
+			let consensus_state = pallet_ibc::grandpa::consensus_state::ConsensusState {
+				root,
+				height,
+				set_id,
+				authorities,
+			};
+			<pallet_ibc::Module<T>>::create_client(identifier, pallet_ibc::ClientType::GRANDPA, height, consensus_state)?;
+
+			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn test_conn_open_init(
+			origin,
+			identifier: H256,
+			desired_counterparty_connection_identifier: H256,
+			client_identifier: H256,
+			counterparty_client_identifier: H256
+		) -> dispatch::DispatchResult {
+			let _who = ensure_signed(origin)?;
+
+			<pallet_ibc::Module<T>>::conn_open_init(
+				identifier,
+				desired_counterparty_connection_identifier,
+				client_identifier,
+				counterparty_client_identifier
+			)?;
+
+			Ok(())
+		}
+		#[weight = 0]
+		pub fn test_bind_port(origin, identifier: Vec<u8>) -> dispatch::DispatchResult {
+			let _who = ensure_signed(origin)?;
+			let module_index = T::PalletInfo::index::<Self>()
+				.expect("Every active module has an index in the runtime; qed") as u8;
+
+			<pallet_ibc::Module<T>>::bind_port(identifier, module_index)?;
+
+			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn test_release_port(origin, identifier: Vec<u8>) -> dispatch::DispatchResult {
+			let _who = ensure_signed(origin)?;
+			let module_index = T::PalletInfo::index::<Self>()
+				.expect("Every active module has an index in the runtime; qed") as u8;
+
+			<pallet_ibc::Module<T>>::release_port(identifier, module_index)?;
+
+			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn test_chan_open_init(
+			origin,
+			unordered: bool,
+			connection_hops: Vec<H256>,
+			port_identifier: Vec<u8>,
+			channel_identifier: H256,
+			counterparty_port_identifier: Vec<u8>,
+			counterparty_channel_identifier: H256,
+		) -> dispatch::DispatchResult {
+			let _who = ensure_signed(origin)?;
+			let module_index = T::PalletInfo::index::<Self>()
+				.expect("Every active module has an index in the runtime; qed") as u8;
+			let order = if unordered { pallet_ibc::ChannelOrder::Unordered } else { pallet_ibc::ChannelOrder::Ordered };
+
+			<pallet_ibc::Module<T>>::chan_open_init(
+				module_index,
+				order,
+				connection_hops,
+				port_identifier,
+				channel_identifier,
+				counterparty_port_identifier,
+				counterparty_channel_identifier,
+				vec![],
+			)?;
+
+			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn test_send_packet(
+			origin,
+			sequence: u64,
+			timeout_height: u32,
+			source_port: Vec<u8>,
+			source_channel: H256,
+			dest_port: Vec<u8>,
+			dest_channel: H256,
+			data: Vec<u8>,
+		) -> dispatch::DispatchResult {
+			let _who = ensure_signed(origin)?;
+			let packet = pallet_ibc::Packet{
+				sequence,
+				timeout_height,
+				source_port,
+				source_channel,
+				dest_port,
+				dest_channel,
+				data,
+			};
+			<pallet_ibc::Module<T>>::send_packet(packet)?;
+
+			Ok(())
+		}
 	}
+}
+
+impl<T: Config> Module<T> {
+	fn on_chan_open_init() {}
+
+	pub fn on_chan_open_try(order: pallet_ibc::ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>) {
+		sp_std::if_std! {
+			println!("on_chan_open_try");
+		}
+	}
+
+	pub fn on_chan_open_ack(port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>) {
+		sp_std::if_std! {
+			println!("on_chan_open_ack");
+		}
+	}
+
+	pub fn on_chan_open_confirm(port_identifier: Vec<u8>, channel_identifier: H256) {
+		sp_std::if_std! {
+			println!("on_chan_open_confirm");
+		}
+	}
+
+	fn on_chan_close_confirm() {}
+
+	pub fn on_recv_packet(packet: pallet_ibc::Packet) {
+		sp_std::if_std! {
+			println!("on_recv_packet: {:?}", packet);
+		}
+	}
+
+	fn on_timeout_packet() {}
+	fn on_acknowledge_packet() {}
+	fn on_timeout_packet_close() {}
 }
