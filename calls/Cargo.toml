@@ -1,18 +1,17 @@
 [package]
 name = 'calls'
 version = '0.1.0'
-authors = ['Yuanchao Sun <ys@cdot.network>']
+authors = ['Yuanchao Sun <julian@oct.network>']
 edition = '2018'
 
 [dependencies]
-codec = { package = 'parity-scale-codec', version = '1.3.4', default-features = false, features = ['derive', 'full'] }
-substrate-subxt = { git = 'https://github.com/cdot-network/substrate-subxt.git', branch = 'ibc-demo', version = '0.12.0'}
+codec = { package = 'parity-scale-codec', version = '2.0.0', default-features = false, features = ['derive', 'full'] }
+substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.git", branch = "octopus" }
 
-node-runtime = { path = '../runtime', package = 'node-template-runtime' }
-pallet-ibc = { path = '../pallets/ibc' }
+pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'master' }
 
-frame-system = '2.0.0'
-pallet-balances = '2.0.0'
-sp-core = '2.0.0'
-sp-finality-grandpa = '2.0.0'
-sp-runtime = '2.0.0'
+frame-system = '3.0.0'
+pallet-balances = '3.0.0'
+sp-core = '3.0.0'
+sp-finality-grandpa = '3.0.0'
+sp-runtime = '3.0.0'
