@@ -5,7 +5,7 @@ use sp_core::H256;
 use sp_finality_grandpa::{AuthorityList, SetId};
 use substrate_subxt::{
     module,
-    system::{System, SystemEventsDecoder},
+    system::System,
     Call,
 };
 

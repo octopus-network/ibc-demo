@@ -20,15 +20,26 @@ use std::collections::HashMap;
 use std::error::Error;
 use substrate_subxt::{ClientBuilder, PairSigner};
 
-use ibc::ics02_client::client_def::AnyClientState;
-use ibc::ics02_client::client_def::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics10_grandpa::client_state::ClientState as GRANDPAClientState;
-use ibc::ics10_grandpa::consensus_state::ConsensusState as GRANDPAConsensusState;
+use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+// use ibc::ics10_grandpa::client_state::ClientState as GRANDPAClientState;
+// use ibc::ics10_grandpa::consensus_state::ConsensusState as GRANDPAConsensusState;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint::Time;
 use tendermint_proto::Protobuf;
+use ibc::signer::Signer;
+use std::time::Duration;
+use ibc::ics24_host::identifier::ChainId;
+use tendermint::trust_threshold::{TrustThreshold, TrustThresholdFraction};
+use ibc::ics02_client::height::Height;
+use ibc::ics07_tendermint::client_state::AllowUpdate;
+use ibc::ics23_commitment::commitment::CommitmentRoot;
+use tendermint::Hash;
+use std::convert::TryFrom;
 
 lazy_static! {
     static ref ENDPOINTS: HashMap<&'static str, &'static str> = {
@@ -38,6 +49,8 @@ lazy_static! {
         m
     };
 }
+
+const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 fn get_dummy_account_id_raw() -> String {
     "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
@@ -382,26 +395,64 @@ async fn create_client(
         .unwrap();
     println!("counterparty authorities: {:?}", authorities);
 
-    let client_state = AnyClientState::GRANDPA(
-        GRANDPAClientState::new(
-            identifier.clone(),
-            latest_header.number.into(),
-            0,
-            0,
-            authorities,
-        )
-        .unwrap(),
+    // let client_state = AnyClientState::GRANDPA(
+    //     GRANDPAClientState::new(
+    //         identifier.clone(),
+    //         latest_header.number.into(),
+    //         0,
+    //         0,
+    //         authorities,
+    //     )
+    //     .unwrap(),
+    // );
+    // let consensus_state = AnyConsensusState::GRANDPA(GRANDPAConsensusState::new(
+    //     Time::now(),
+    //     latest_header.state_root,
+    // ));
+
+    // get date from: https://github.com/informalsystems/ibc-rs/blob/c78b793d99571df4781cec4c2cfcb18ed68098d1/guide/src/commands/queries/client.md
+    let chain_id = ChainId::new("ibc-2".to_string(), 2);
+    let trust_level = TrustThresholdFraction::new(1, 3).unwrap();
+    let trusting_period = Duration::from_secs(1209600);
+    let unbonding_period = Duration::from_secs(1814400);
+    let max_clock_drift = Duration::from_secs(3);
+    let latest_height = Height::new(2, 3069);
+    let frozen_height = Height::new(0,0);
+    let upgrade_path = vec!["upgrade".to_string(), "upgradedIBCState".to_string()];
+    let allow_update = AllowUpdate {
+        after_expiry: true,
+        after_misbehaviour: true,
+    };
+
+    let client_state = AnyClientState::Tendermint(
+        TendermintClientState::new(
+            chain_id,
+            trust_level,
+            trusting_period,
+            unbonding_period,
+            max_clock_drift,
+            latest_height,
+            frozen_height,
+            upgrade_path,
+            allow_update
+        ).unwrap(),
     );
-    let consensus_state = AnyConsensusState::GRANDPA(GRANDPAConsensusState::new(
-        Time::now(),
-        latest_header.state_root,
+
+    let root = CommitmentRoot::from("371DD19003221B60162D42C78FD86ABF95A572F3D9497084584B75F97B05B70C".as_bytes().to_vec());
+    let timestamp = Time::from_str("2021-04-13T14:11:20.969154Z").unwrap();
+    let next_validators_hash = Hash::try_from("740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7".as_bytes().to_vec()).unwrap();
+
+    let consensus_state = AnyConsensusState::Tendermint(TendermintConsensusState::new(
+        root,
+        timestamp,
+        next_validators_hash,
     ));
 
     let tm_signer = get_dummy_account_id();
-    let msg = MsgCreateAnyClient::new(client_state, consensus_state, tm_signer).unwrap();
+    let msg = MsgCreateAnyClient::new(client_state, consensus_state, Signer::new(tm_signer.to_string())).unwrap();
     let data = msg.encode_vec().unwrap();
     let any = pallet_ibc::informalsystems::Any {
-        type_url: create_client::TYPE_URL.to_string(),
+        type_url: TYPE_URL.to_string(),
         value: data,
     };
 
