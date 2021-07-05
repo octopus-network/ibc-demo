@@ -858,7 +858,6 @@ name = "cli"
 version = "0.1.0"
 dependencies = [
  "anomaly",
- "async-std",
  "calls",
  "clap",
  "hex",
@@ -874,6 +873,7 @@ dependencies = [
  "tendermint",
  "tendermint-proto",
  "thiserror",
+ "tokio 1.8.0",
 ]
 
 [[package]]

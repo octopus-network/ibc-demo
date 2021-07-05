@@ -6,7 +6,7 @@ authors = ['Yuanchao Sun <julian@oct.network>']
 edition = '2018'
 
 [dependencies]
-async-std = '1.6.2'
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 anomaly = '0.2.0'
 thiserror = '1.0.11'
 clap = '2.33.0'

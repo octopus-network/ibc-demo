@@ -1,12 +1,17 @@
 use sp_runtime::{MultiSignature, OpaqueExtrinsic};
 use substrate_subxt::{
-    balances::Balances, contracts::Contracts, extrinsic::DefaultExtra, system::System, Runtime,
+    system::{System, SystemEventTypeRegistry},
+    balances::{Balances, BalancesEventTypeRegistry},
+    contracts::{Contracts,ContractsEventTypeRegistry},
+    staking::{Staking,StakingEventTypeRegistry},
+    session::{Session, SessionEventTypeRegistry},
+    extrinsic::DefaultExtra,
+    Runtime,
+    BasicSessionKeys,
     EventTypeRegistry,
     register_default_type_sizes,
 };
-use substrate_subxt::system::SystemEventTypeRegistry;
-use substrate_subxt::balances::BalancesEventTypeRegistry;
-use substrate_subxt::contracts::ContractsEventTypeRegistry;
+use sp_core::H256;
 use sp_runtime::generic::Header;
 use sp_runtime::traits::{BlakeTwo256, Verify, IdentifyAccount};
 use pallet_balances::AccountData;
@@ -24,7 +29,10 @@ impl Runtime for NodeRuntime {
     fn register_type_sizes(event_type_registry: &mut EventTypeRegistry<Self>) {
         event_type_registry.with_system();
         event_type_registry.with_balances();
-        event_type_registry.with_contracts();
+        event_type_registry.with_staking();
+        event_type_registry.with_session();
+        event_type_registry.register_type_size::<H256>("H256");
+        event_type_registry.register_type_size::<u64>("TAssetBalance");
         register_default_type_sizes(event_type_registry);
     }
 }
@@ -44,6 +52,12 @@ impl System for NodeRuntime {
 impl Balances for NodeRuntime {
     type Balance = u128;
 }
+
+impl Session for NodeRuntime {
+    type ValidatorId = <Self as System>::AccountId;
+    type Keys = BasicSessionKeys;
+}
+impl Staking for NodeRuntime {}
 
 impl Contracts for NodeRuntime {}
 
