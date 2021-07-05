@@ -1,20 +1,18 @@
-use sp_runtime::{MultiSignature, OpaqueExtrinsic};
-use substrate_subxt::{
-    system::{System, SystemEventTypeRegistry},
-    balances::{Balances, BalancesEventTypeRegistry},
-    contracts::{Contracts,ContractsEventTypeRegistry},
-    staking::{Staking,StakingEventTypeRegistry},
-    session::{Session, SessionEventTypeRegistry},
-    extrinsic::DefaultExtra,
-    Runtime,
-    BasicSessionKeys,
-    EventTypeRegistry,
-    register_default_type_sizes,
-};
+use pallet_balances::AccountData;
 use sp_core::H256;
 use sp_runtime::generic::Header;
-use sp_runtime::traits::{BlakeTwo256, Verify, IdentifyAccount};
-use pallet_balances::AccountData;
+use sp_runtime::traits::{BlakeTwo256, IdentifyAccount, Verify};
+use sp_runtime::{MultiSignature, OpaqueExtrinsic};
+use substrate_subxt::{
+    balances::{Balances, BalancesEventTypeRegistry},
+    contracts::{Contracts, ContractsEventTypeRegistry},
+    extrinsic::DefaultExtra,
+    register_default_type_sizes,
+    session::{Session, SessionEventTypeRegistry},
+    staking::{Staking, StakingEventTypeRegistry},
+    system::{System, SystemEventTypeRegistry},
+    BasicSessionKeys, EventTypeRegistry, Runtime,
+};
 
 pub mod ibc;
 pub mod template;

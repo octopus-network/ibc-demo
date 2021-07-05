@@ -33,6 +33,7 @@ use ibc::ics24_host::identifier::ChainId;
 use ibc::signer::Signer;
 use std::convert::TryFrom;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 use tendermint::account::Id as AccountId;
 use tendermint::trust_threshold::{TrustThreshold, TrustThresholdFraction};
@@ -40,7 +41,6 @@ use tendermint::Hash;
 use tendermint::Time;
 use tendermint_proto::Protobuf;
 use tokio::task::JoinHandle;
-use std::sync::Arc;
 
 lazy_static! {
     static ref ENDPOINTS: HashMap<&'static str, &'static str> = {
@@ -75,11 +75,7 @@ async fn execute(matches: ArgMatches<'_>) {
             let counterparty_addr = ENDPOINTS.get(chain_name).unwrap();
             println!("counterparty_addr = {}", counterparty_addr);
 
-            let result = create_client(
-                &addr,
-                &counterparty_addr,
-                chain_name.to_string(),
-            ).await;
+            let result = create_client(&addr, &counterparty_addr, chain_name.to_string()).await;
             println!("create_client: {:?}", result);
         }
         ("conn-open-init", Some(matches)) => {
@@ -121,7 +117,8 @@ async fn execute(matches: ArgMatches<'_>) {
                 desired_counterparty_connection_identifier,
                 client_identifier,
                 counterparty_client_identifier,
-            ).await;
+            )
+            .await;
 
             println!("conn_open_init: {:?}", result);
         }
@@ -191,7 +188,8 @@ async fn execute(matches: ArgMatches<'_>) {
                 channel_identifier,
                 counterparty_port_identifier,
                 desired_counterparty_channel_identifier,
-            ).await;
+            )
+            .await;
             println!("chan_open_init: {:?}", result);
         }
         ("send-packet", Some(matches)) => {
@@ -239,7 +237,8 @@ async fn execute(matches: ArgMatches<'_>) {
                 dest_port,
                 dest_channel,
                 data,
-            ).await;
+            )
+            .await;
             println!("send_packet: {:?}", result);
         }
         _ => print_usage(&matches),
@@ -377,8 +376,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ",
             )])
         .get_matches();
-    let result = tokio::spawn( async move {
-        let ret  = execute(matches).await;
+    let result = tokio::spawn(async move {
+        let ret = execute(matches).await;
     });
 
     let _ = tokio::join!(result);

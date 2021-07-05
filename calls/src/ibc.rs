@@ -2,12 +2,7 @@
 use codec::Encode;
 use core::marker::PhantomData;
 use sp_core::H256;
-use substrate_subxt::{
-    balances::Balances,
-    module,
-    system::System,
-    Call, Store,
-};
+use substrate_subxt::{balances::Balances, module, system::System, Call, Store};
 
 /// The subset of the `pallet_ibc::Trait` that a client must implement.
 #[module]
