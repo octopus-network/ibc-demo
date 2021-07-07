@@ -429,17 +429,26 @@ async fn create_client(
 
     // get date from: https://github.com/informalsystems/ibc-rs/blob/c78b793d99571df4781cec4c2cfcb18ed68098d1/guide/src/commands/queries/client.md
     let chain_id = ChainId::new("ibc-2".to_string(), 2);
+    println!("chain_id = {:?}", chain_id);
     let trust_level = TrustThresholdFraction::new(1, 3).unwrap();
+    println!("trust_level = {:?}", trust_level);
     let trusting_period = Duration::from_secs(1209600);
+    println!("trusting_period = {:?}", trusting_period);
     let unbonding_period = Duration::from_secs(1814400);
+    println!("unbonding_period = {:?}", unbonding_period);
     let max_clock_drift = Duration::from_secs(3);
+    println!("max_clock_drift = {:?}", max_clock_drift);
     let latest_height = Height::new(2, 3069);
+    println!("latest_height = {:?}", latest_height);
     let frozen_height = Height::new(0, 0);
+    println!("frozen_height = {:?}", frozen_height);
     let upgrade_path = vec!["upgrade".to_string(), "upgradedIBCState".to_string()];
+    println!("upgrade_path = {:?}", upgrade_path);
     let allow_update = AllowUpdate {
         after_expiry: true,
         after_misbehaviour: true,
     };
+    println!("allow update = {:?}", allow_update);
 
     let client_state = AnyClientState::Tendermint(
         TendermintClientState::new(
@@ -455,25 +464,28 @@ async fn create_client(
         )
         .unwrap(),
     );
+    println!("client_state: {:?}", client_state);
 
     let root = CommitmentRoot::from(
         "371DD19003221B60162D42C78FD86ABF95A572F3D9497084584B75F97B05B70C"
             .as_bytes()
             .to_vec(),
     );
+    println!("root = {:?}", root);
     let timestamp = Time::from_str("2021-04-13T14:11:20.969154Z").unwrap();
-    let next_validators_hash = Hash::try_from(
-        "740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7"
-            .as_bytes()
-            .to_vec(),
-    )
-    .unwrap();
+    println!("timestamp = {:?}", timestamp);
+    let temp_vec = "740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7".as_bytes().to_vec();
+    println!("temp_vec = {:?}", temp_vec);
+    println!("temp vec lengtj = {:?}", temp_vec.len());
+    let next_validators_hash = Hash::from_hex_upper(tendermint::hash::Algorithm::Sha256,"740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7").unwrap();
+    println!("next validators hash  = {:?}", next_validators_hash);
 
     let consensus_state = AnyConsensusState::Tendermint(TendermintConsensusState::new(
         root,
         timestamp,
         next_validators_hash,
     ));
+    println!("consensus_state = {:?}", consensus_state);
 
     let tm_signer = get_dummy_account_id();
     let msg = MsgCreateAnyClient::new(
@@ -482,6 +494,8 @@ async fn create_client(
         Signer::new(tm_signer.to_string()),
     )
     .unwrap();
+    println!("msg = {:?}", msg);
+
     let data = msg.encode_vec().unwrap();
     let any = pallet_ibc::informalsystems::Any {
         type_url: TYPE_URL.to_string(),
@@ -492,6 +506,8 @@ async fn create_client(
         .set_url(addr)
         .build()
         .await?;
+
+    // println!("client = {:?}", client);
 
     let _result = client
         .deliver(
@@ -504,6 +520,8 @@ async fn create_client(
             },
         )
         .await?;
+    println!("resut = {:?}", _result);
+
     Ok(())
 }
 
