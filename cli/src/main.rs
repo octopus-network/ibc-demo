@@ -129,7 +129,6 @@ async fn execute(matches: ArgMatches<'_>) {
             let identifier = identifier.as_bytes().to_vec();
             println!("identifier: {:?}", identifier);
 
-            // let result = async_std::task::block_on(bind_port(&addr, identifier));
             let result = bind_port(&addr, identifier).await;
             println!("bind_port: {:?}", result);
         }
@@ -140,7 +139,6 @@ async fn execute(matches: ArgMatches<'_>) {
             let identifier = identifier.as_bytes().to_vec();
             println!("identifier: {:?}", identifier);
 
-            // let result = async_std::task::block_on(release_port(&addr, identifier));
             let result = release_port(&addr, identifier).await;
             println!("release_port: {:?}", result);
         }
