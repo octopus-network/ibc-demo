@@ -17,18 +17,30 @@ use sp_core::{storage::StorageKey, Blake2Hasher, Hasher, H256};
 use sp_finality_grandpa::{AuthorityList, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
 use sp_keyring::AccountKeyring;
 use std::collections::HashMap;
-use std::error::Error;
 use substrate_subxt::{ClientBuilder, PairSigner};
 
-use ibc::ics02_client::client_def::AnyClientState;
-use ibc::ics02_client::client_def::AnyConsensusState;
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics10_grandpa::client_state::ClientState as GRANDPAClientState;
-use ibc::ics10_grandpa::consensus_state::ConsensusState as GRANDPAConsensusState;
+use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+// use ibc::ics10_grandpa::client_state::ClientState as GRANDPAClientState;
+// use ibc::ics10_grandpa::consensus_state::ConsensusState as GRANDPAConsensusState;
+use ibc::ics02_client::height::Height;
+use ibc::ics07_tendermint::client_state::AllowUpdate;
+use ibc::ics23_commitment::commitment::CommitmentRoot;
+use ibc::ics24_host::identifier::ChainId;
+use ibc::signer::Signer;
+use std::convert::TryFrom;
 use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Duration;
 use tendermint::account::Id as AccountId;
+use tendermint::trust_threshold::{TrustThreshold, TrustThresholdFraction};
+use tendermint::Hash;
 use tendermint::Time;
 use tendermint_proto::Protobuf;
+use tokio::task::JoinHandle;
 
 lazy_static! {
     static ref ENDPOINTS: HashMap<&'static str, &'static str> = {
@@ -39,6 +51,8 @@ lazy_static! {
     };
 }
 
+const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
+
 fn get_dummy_account_id_raw() -> String {
     "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
 }
@@ -47,20 +61,21 @@ pub fn get_dummy_account_id() -> AccountId {
     AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
 }
 
-fn execute(matches: ArgMatches) {
+async fn execute(matches: ArgMatches<'_>) {
     let chain = matches.value_of("CHAIN").unwrap();
     let addr = ENDPOINTS.get(chain).unwrap();
     match matches.subcommand() {
         ("create-client", Some(matches)) => {
+            println!("In Create client");
+
             let chain_name = matches
                 .value_of("chain-name")
                 .expect("The name of chain is required; qed");
+            println!("chain_name = {}", chain_name);
             let counterparty_addr = ENDPOINTS.get(chain_name).unwrap();
-            let result = async_std::task::block_on(create_client(
-                &addr,
-                &counterparty_addr,
-                chain_name.to_string(),
-            ));
+            println!("counterparty_addr = {}", counterparty_addr);
+
+            let result = create_client(&addr, &counterparty_addr, chain_name.to_string()).await;
             println!("create_client: {:?}", result);
         }
         ("conn-open-init", Some(matches)) => {
@@ -96,13 +111,15 @@ fn execute(matches: ArgMatches) {
                 desired_counterparty_connection_identifier
             );
 
-            let result = async_std::task::block_on(conn_open_init(
+            let result = conn_open_init(
                 &addr,
                 identifier,
                 desired_counterparty_connection_identifier,
                 client_identifier,
                 counterparty_client_identifier,
-            ));
+            )
+            .await;
+
             println!("conn_open_init: {:?}", result);
         }
         ("bind-port", Some(matches)) => {
@@ -112,7 +129,7 @@ fn execute(matches: ArgMatches) {
             let identifier = identifier.as_bytes().to_vec();
             println!("identifier: {:?}", identifier);
 
-            let result = async_std::task::block_on(bind_port(&addr, identifier));
+            let result = bind_port(&addr, identifier).await;
             println!("bind_port: {:?}", result);
         }
         ("release-port", Some(matches)) => {
@@ -122,7 +139,7 @@ fn execute(matches: ArgMatches) {
             let identifier = identifier.as_bytes().to_vec();
             println!("identifier: {:?}", identifier);
 
-            let result = async_std::task::block_on(release_port(&addr, identifier));
+            let result = release_port(&addr, identifier).await;
             println!("release_port: {:?}", result);
         }
         ("chan-open-init", Some(matches)) => {
@@ -161,7 +178,7 @@ fn execute(matches: ArgMatches) {
                 desired_counterparty_channel_identifier
             );
 
-            let result = async_std::task::block_on(chan_open_init(
+            let result = chan_open_init(
                 &addr,
                 unordered,
                 connection_hops,
@@ -169,7 +186,8 @@ fn execute(matches: ArgMatches) {
                 channel_identifier,
                 counterparty_port_identifier,
                 desired_counterparty_channel_identifier,
-            ));
+            )
+            .await;
             println!("chan_open_init: {:?}", result);
         }
         ("send-packet", Some(matches)) => {
@@ -208,7 +226,7 @@ fn execute(matches: ArgMatches) {
                 .expect("The data of packet is required; qed");
             let data: Vec<u8> = hex::decode(data).expect("Invalid message");
 
-            let result = async_std::task::block_on(send_packet(
+            let result = send_packet(
                 &addr,
                 sequence,
                 timeout_height,
@@ -217,7 +235,8 @@ fn execute(matches: ArgMatches) {
                 dest_port,
                 dest_channel,
                 data,
-            ));
+            )
+            .await;
             println!("send_packet: {:?}", result);
         }
         _ => print_usage(&matches),
@@ -293,7 +312,8 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
     Ok(())
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = App::new("cli")
         .author("Cdot Network <ys@cdot.network>")
         .about("cli is a tool for testing IBC protocol")
@@ -354,21 +374,29 @@ fn main() {
 ",
             )])
         .get_matches();
-    execute(matches);
+    let result = tokio::spawn(async move {
+        let ret = execute(matches).await;
+    });
+
+    let _ = tokio::join!(result);
+
+    Ok(())
 }
 
 async fn create_client(
     addr: &str,
     counterparty_addr: &str,
     identifier: String,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     use ibc::ics02_client::msgs::create_client;
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
+    println!("signer");
 
     let counterparty_client = ClientBuilder::<Runtime>::new()
         .set_url(counterparty_addr)
         .build()
         .await?;
+    println!("Counterparty client");
 
     let block_hash = counterparty_client.finalized_head().await?;
     println!("counterparty latest finalized block_hash: {:?}", block_hash);
@@ -382,26 +410,93 @@ async fn create_client(
         .unwrap();
     println!("counterparty authorities: {:?}", authorities);
 
-    let client_state = AnyClientState::GRANDPA(
-        GRANDPAClientState::new(
-            identifier.clone(),
-            latest_header.number.into(),
-            0,
-            0,
-            authorities,
+    // let client_state = AnyClientState::GRANDPA(
+    //     GRANDPAClientState::new(
+    //         identifier.clone(),
+    //         latest_header.number.into(),
+    //         0,
+    //         0,
+    //         authorities,
+    //     )
+    //     .unwrap(),
+    // );
+    // let consensus_state = AnyConsensusState::GRANDPA(GRANDPAConsensusState::new(
+    //     Time::now(),
+    //     latest_header.state_root,
+    // ));
+
+    // get date from: https://github.com/informalsystems/ibc-rs/blob/c78b793d99571df4781cec4c2cfcb18ed68098d1/guide/src/commands/queries/client.md
+    let chain_id = ChainId::new("ibc-2".to_string(), 2);
+    println!("chain_id = {:?}", chain_id);
+    let trust_level = TrustThresholdFraction::new(1, 3).unwrap();
+    println!("trust_level = {:?}", trust_level);
+    let trusting_period = Duration::from_secs(1209600);
+    println!("trusting_period = {:?}", trusting_period);
+    let unbonding_period = Duration::from_secs(1814400);
+    println!("unbonding_period = {:?}", unbonding_period);
+    let max_clock_drift = Duration::from_secs(3);
+    println!("max_clock_drift = {:?}", max_clock_drift);
+    let latest_height = Height::new(2, 3069);
+    println!("latest_height = {:?}", latest_height);
+    let frozen_height = Height::new(0, 0);
+    println!("frozen_height = {:?}", frozen_height);
+    let upgrade_path = vec!["upgrade".to_string(), "upgradedIBCState".to_string()];
+    println!("upgrade_path = {:?}", upgrade_path);
+    let allow_update = AllowUpdate {
+        after_expiry: true,
+        after_misbehaviour: true,
+    };
+    println!("allow update = {:?}", allow_update);
+
+    let client_state = AnyClientState::Tendermint(
+        TendermintClientState::new(
+            chain_id,
+            trust_level,
+            trusting_period,
+            unbonding_period,
+            max_clock_drift,
+            latest_height,
+            frozen_height,
+            upgrade_path,
+            allow_update,
         )
         .unwrap(),
     );
-    let consensus_state = AnyConsensusState::GRANDPA(GRANDPAConsensusState::new(
-        Time::now(),
-        latest_header.state_root,
+    println!("client_state: {:?}", client_state);
+
+    let root = CommitmentRoot::from(
+        "371DD19003221B60162D42C78FD86ABF95A572F3D9497084584B75F97B05B70C"
+            .as_bytes()
+            .to_vec(),
+    );
+    println!("root = {:?}", root);
+    let timestamp = Time::from_str("2021-04-13T14:11:20.969154Z").unwrap();
+    println!("timestamp = {:?}", timestamp);
+    let temp_vec = "740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7".as_bytes().to_vec();
+    println!("temp_vec = {:?}", temp_vec);
+    println!("temp vec lengtj = {:?}", temp_vec.len());
+    let next_validators_hash = Hash::from_hex_upper(tendermint::hash::Algorithm::Sha256,"740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7").unwrap();
+    println!("next validators hash  = {:?}", next_validators_hash);
+
+    let consensus_state = AnyConsensusState::Tendermint(TendermintConsensusState::new(
+        root,
+        timestamp,
+        next_validators_hash,
     ));
+    println!("consensus_state = {:?}", consensus_state);
 
     let tm_signer = get_dummy_account_id();
-    let msg = MsgCreateAnyClient::new(client_state, consensus_state, tm_signer).unwrap();
+    let msg = MsgCreateAnyClient::new(
+        client_state,
+        consensus_state,
+        Signer::new(tm_signer.to_string()),
+    )
+    .unwrap();
+    println!("msg = {:?}", msg);
+
     let data = msg.encode_vec().unwrap();
     let any = pallet_ibc::informalsystems::Any {
-        type_url: create_client::TYPE_URL.to_string(),
+        type_url: TYPE_URL.to_string(),
         value: data,
     };
 
@@ -409,6 +504,8 @@ async fn create_client(
         .set_url(addr)
         .build()
         .await?;
+
+    // println!("client = {:?}", client);
 
     let _result = client
         .deliver(
@@ -421,6 +518,8 @@ async fn create_client(
             },
         )
         .await?;
+    println!("resut = {:?}", _result);
+
     Ok(())
 }
 
@@ -430,7 +529,7 @@ async fn conn_open_init(
     desired_counterparty_connection_identifier: H256,
     client_identifier: H256,
     counterparty_client_identifier: H256,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
         .set_url(addr.clone())
@@ -448,7 +547,7 @@ async fn conn_open_init(
     Ok(())
 }
 
-async fn bind_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn Error>> {
+async fn bind_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
         .set_url(addr.clone())
@@ -458,7 +557,7 @@ async fn bind_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-async fn release_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn Error>> {
+async fn release_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
         .set_url(addr.clone())
@@ -476,7 +575,7 @@ async fn chan_open_init(
     channel_identifier: H256,
     counterparty_port_identifier: Vec<u8>,
     counterparty_channel_identifier: H256,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
         .set_url(addr.clone())
@@ -505,7 +604,7 @@ async fn send_packet(
     dest_port: Vec<u8>,
     dest_channel: H256,
     data: Vec<u8>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
         .set_url(addr.clone())

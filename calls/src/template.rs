@@ -3,11 +3,7 @@ use codec::Encode;
 use core::marker::PhantomData;
 use sp_core::H256;
 use sp_finality_grandpa::{AuthorityList, SetId};
-use substrate_subxt::{
-    module,
-    system::{System, SystemEventsDecoder},
-    Call,
-};
+use substrate_subxt::{module, system::System, Call};
 
 /// The subset of the `template::Trait` that a client must implement.
 #[module]
