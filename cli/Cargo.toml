@@ -17,7 +17,7 @@ lazy_static = '1.4.0'
 substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.git", branch = "octopus" }
 
 calls = { path = '../calls' }
-pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'davirian-feature-relayer' }
+pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'dv-event-error' }
 
 
 sp-core = '3.0.0'
