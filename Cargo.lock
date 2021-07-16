@@ -3628,18 +3628,17 @@ dependencies = [
 [[package]]
 name = "pallet-ibc"
 version = "3.0.0-pre.0"
+source = "git+https://github.com/octopus-network/substrate-ibc.git?branch=davirian-feature-relayer#b4f6aa9b20b18fefec82d349f687e96cdce595ae"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "hex",
  "ibc 0.5.0 (git+https://github.com/octopus-network/ibc-rs.git?branch=dv-pub-createclient-attribute)",
  "log",
  "parity-scale-codec",
  "prost",
  "prost-types",
  "serde",
- "sha2 0.9.5",
  "sp-core 3.0.0 (git+https://github.com/octopus-network/substrate.git?branch=polkadot-v0.9.5)",
  "sp-runtime 3.0.0 (git+https://github.com/octopus-network/substrate.git?branch=polkadot-v0.9.5)",
  "sp-std 3.0.0 (git+https://github.com/octopus-network/substrate.git?branch=polkadot-v0.9.5)",
