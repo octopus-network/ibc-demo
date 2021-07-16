@@ -17,7 +17,9 @@ lazy_static = '1.4.0'
 substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.git", branch = "octopus" }
 
 calls = { path = '../calls' }
-pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'master' }
+#pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'davirian-feature-relayer' }
+pallet-ibc = { path = "../pallets/ibc" }
+
 
 sp-core = '3.0.0'
 sp-finality-grandpa = '3.0.0'

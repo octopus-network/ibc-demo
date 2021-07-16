@@ -394,23 +394,23 @@ async fn create_client(
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     println!("signer");
 
-    let counterparty_client = ClientBuilder::<Runtime>::new()
-        .set_url(counterparty_addr)
-        .build()
-        .await?;
-    println!("Counterparty client");
+    // let counterparty_client = ClientBuilder::<Runtime>::new()
+    //     .set_url(counterparty_addr)
+    //     .build()
+    //     .await?;
+    // println!("Counterparty client");
 
-    let block_hash = counterparty_client.finalized_head().await?;
-    println!("counterparty latest finalized block_hash: {:?}", block_hash);
-    let latest_header = counterparty_client.header(Some(block_hash)).await?.unwrap();
-    println!("counterparty latest_header: {:?}", latest_header);
-    let storage_key = StorageKey(GRANDPA_AUTHORITIES_KEY.to_vec());
-    let authorities: AuthorityList = counterparty_client
-        .fetch_unhashed::<VersionedAuthorityList>(storage_key, Some(block_hash))
-        .await?
-        .map(|versioned| versioned.into())
-        .unwrap();
-    println!("counterparty authorities: {:?}", authorities);
+    // let block_hash = counterparty_client.finalized_head().await?;
+    // println!("counterparty latest finalized block_hash: {:?}", block_hash);
+    // let latest_header = counterparty_client.header(Some(block_hash)).await?.unwrap();
+    // println!("counterparty latest_header: {:?}", latest_header);
+    // let storage_key = StorageKey(GRANDPA_AUTHORITIES_KEY.to_vec());
+    // let authorities: AuthorityList = counterparty_client
+    //     .fetch_unhashed::<VersionedAuthorityList>(storage_key, Some(block_hash))
+    //     .await?
+    //     .map(|versioned| versioned.into())
+    //     .unwrap();
+    // println!("counterparty authorities: {:?}", authorities);
 
     // let client_state = AnyClientState::GRANDPA(
     //     GRANDPAClientState::new(
@@ -476,7 +476,7 @@ async fn create_client(
     println!("timestamp = {:?}", timestamp);
     let temp_vec = "740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7".as_bytes().to_vec();
     println!("temp_vec = {:?}", temp_vec);
-    println!("temp vec lengtj = {:?}", temp_vec.len());
+    println!("temp vec length = {:?}", temp_vec.len());
     let next_validators_hash = Hash::from_hex_upper(tendermint::hash::Algorithm::Sha256,"740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7").unwrap();
     println!("next validators hash  = {:?}", next_validators_hash);
 
@@ -497,7 +497,7 @@ async fn create_client(
     println!("msg = {:?}", msg);
 
     let data = msg.encode_vec().unwrap();
-    let any = pallet_ibc::informalsystems::Any {
+    let any = pallet_ibc::Any {
         type_url: TYPE_URL.to_string(),
         value: data,
     };

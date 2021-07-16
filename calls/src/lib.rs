@@ -1,3 +1,5 @@
+#![feature(associated_type_bounds)]
+
 use pallet_balances::AccountData;
 use sp_core::H256;
 use sp_runtime::generic::Header;
@@ -13,6 +15,7 @@ use substrate_subxt::{
     system::{System, SystemEventTypeRegistry},
     BasicSessionKeys, EventTypeRegistry, Runtime,
 };
+use pallet_ibc::Event;
 
 pub mod ibc;
 pub mod template;
@@ -24,13 +27,15 @@ impl Runtime for NodeRuntime {
     type Signature = MultiSignature;
     type Extra = DefaultExtra<Self>;
 
-    fn register_type_sizes(event_type_registry: &mut EventTypeRegistry<Self>) {
+    fn register_type_sizes(event_type_registry: &mut EventTypeRegistry<Self>)
+    {
         event_type_registry.with_system();
         event_type_registry.with_balances();
         event_type_registry.with_staking();
         event_type_registry.with_session();
         event_type_registry.register_type_size::<H256>("H256");
         event_type_registry.register_type_size::<u64>("TAssetBalance");
+        event_type_registry.register_type_size::<pallet_ibc::event::client_event::CreateClient>("CreateClient");
         register_default_type_sizes(event_type_registry);
     }
 }
