@@ -1,18 +1,7 @@
 mod error;
 mod ibc_logic;
 
-use sp_core::{Blake2Hasher, Hasher, H256};
-
-use clap::{App, Arg, ArgMatches, SubCommand};
-
-use ibc_logic::{
-    channel::chan_open_init,
-    client::create_client,
-    connection::conn_open_init,
-    packet::send_packet,
-    port::{bind_port, release_port},
-};
-
+use clap::{App, Arg, SubCommand};
 use ibc_logic::execute;
 
 #[tokio::main]
