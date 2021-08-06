@@ -1,6 +1,7 @@
 #![feature(associated_type_bounds)]
 
 use pallet_balances::AccountData;
+use pallet_ibc::Event;
 use sp_core::H256;
 use sp_runtime::generic::Header;
 use sp_runtime::traits::{BlakeTwo256, IdentifyAccount, Verify};
@@ -15,7 +16,6 @@ use substrate_subxt::{
     system::{System, SystemEventTypeRegistry},
     BasicSessionKeys, EventTypeRegistry, Runtime,
 };
-use pallet_ibc::Event;
 
 pub mod ibc;
 pub mod template;
@@ -27,8 +27,7 @@ impl Runtime for NodeRuntime {
     type Signature = MultiSignature;
     type Extra = DefaultExtra<Self>;
 
-    fn register_type_sizes(event_type_registry: &mut EventTypeRegistry<Self>)
-    {
+    fn register_type_sizes(event_type_registry: &mut EventTypeRegistry<Self>) {
         event_type_registry.with_system();
         event_type_registry.with_balances();
         event_type_registry.with_staking();
@@ -36,8 +35,10 @@ impl Runtime for NodeRuntime {
         event_type_registry.register_type_size::<H256>("H256");
         event_type_registry.register_type_size::<u64>("TAssetBalance");
         event_type_registry.register_type_size::<pallet_ibc::event::primitive::Height>("Height");
-        event_type_registry.register_type_size::<pallet_ibc::event::primitive::ClientType>("ClientType");
-        event_type_registry.register_type_size::<pallet_ibc::event::primitive::ClientId>("ClientId");
+        event_type_registry
+            .register_type_size::<pallet_ibc::event::primitive::ClientType>("ClientType");
+        event_type_registry
+            .register_type_size::<pallet_ibc::event::primitive::ClientId>("ClientId");
         register_default_type_sizes(event_type_registry);
     }
 }

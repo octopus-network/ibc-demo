@@ -1,11 +1,11 @@
 //! Implements support for the pallet_ibc module.
-use codec::Encode;
 use codec::Decode;
+use codec::Encode;
 use core::marker::PhantomData;
+use pallet_ibc::event::primitive::{ClientId, ClientType, Height};
 use sp_core::H256;
 use substrate_subxt::{balances::Balances, module, system::System, Call, Store};
 use substrate_subxt_proc_macro::Event;
-use pallet_ibc::event::primitive::{Height, ClientId, ClientType};
 
 /// The subset of the `pallet_ibc::Trait` that a client must implement.
 #[module]
@@ -73,13 +73,12 @@ pub trait Ibc: System + Balances {}
 //     pub datagram: pallet_ibc::Datagram,
 // }
 
-
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
 pub struct CreateClientEvent<T: Ibc> {
     pub _runtime: PhantomData<T>,
     pub height: Height,
-    pub client_id : ClientId,
-    pub client_type : ClientType,
+    pub client_id: ClientId,
+    pub client_type: ClientType,
     pub consensus_height: Height,
 }
 
