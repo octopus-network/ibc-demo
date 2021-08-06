@@ -53,29 +53,6 @@ pub async fn conn_open_init(
     Ok(())
 }
 
-pub async fn bind_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
-    let signer = PairSigner::new(AccountKeyring::Bob.pair());
-    let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr)
-        .build()
-        .await?;
-    let _result = client.test_bind_port(&signer, identifier).await?;
-    Ok(())
-}
-
-pub async fn release_port(
-    addr: &str,
-    identifier: Vec<u8>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let signer = PairSigner::new(AccountKeyring::Bob.pair());
-    let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr)
-        .build()
-        .await?;
-    let _result = client.test_release_port(&signer, identifier).await?;
-    Ok(())
-}
-
 pub async fn chan_open_init(
     addr: &str,
     unordered: bool,

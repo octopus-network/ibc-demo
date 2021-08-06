@@ -10,8 +10,11 @@ use lazy_static::lazy_static;
 
 use error::{ValidationError, ValidationKind};
 use ibc_logic::{
-    bind_port, chan_open_init, client::create_client, conn_open_init, packet::send_packet,
-    release_port,
+    chan_open_init,
+    client::create_client,
+    conn_open_init,
+    packet::send_packet,
+    port::{bind_port, release_port},
 };
 
 lazy_static! {
