@@ -1,8 +1,8 @@
+pub mod channel;
 pub mod client;
 pub mod connection;
-pub mod port;
 pub mod packet;
-pub mod channel;
+pub mod port;
 
 use std::str::FromStr;
 
@@ -10,10 +10,7 @@ use sp_core::H256;
 use sp_keyring::AccountKeyring;
 use substrate_subxt::{ClientBuilder, PairSigner};
 
-
-
 use tendermint::account::Id as AccountId;
-
 
 use calls::{
     ibc::DeliverCallExt,
@@ -32,8 +29,6 @@ pub fn get_dummy_account_id() -> AccountId {
     AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
 }
 
-
-
 pub async fn conn_open_init(
     addr: &str,
     identifier: H256,
@@ -43,7 +38,7 @@ pub async fn conn_open_init(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr.clone())
+        .set_url(addr)
         .build()
         .await?;
     let _result = client
@@ -61,7 +56,7 @@ pub async fn conn_open_init(
 pub async fn bind_port(addr: &str, identifier: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr.clone())
+        .set_url(addr)
         .build()
         .await?;
     let _result = client.test_bind_port(&signer, identifier).await?;
@@ -74,7 +69,7 @@ pub async fn release_port(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr.clone())
+        .set_url(addr)
         .build()
         .await?;
     let _result = client.test_release_port(&signer, identifier).await?;
@@ -92,7 +87,7 @@ pub async fn chan_open_init(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr.clone())
+        .set_url(addr)
         .build()
         .await?;
     let _result = client
@@ -108,5 +103,3 @@ pub async fn chan_open_init(
         .await?;
     Ok(())
 }
-
-

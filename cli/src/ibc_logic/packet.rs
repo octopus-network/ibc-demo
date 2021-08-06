@@ -1,11 +1,7 @@
-
+use calls::{template::TestSendPacketCallExt, NodeRuntime as Runtime};
 use sp_core::H256;
-use substrate_subxt::{ClientBuilder, PairSigner};
 use sp_keyring::AccountKeyring;
-use calls::{
-    template::TestSendPacketCallExt,
-    NodeRuntime as Runtime,
-};
+use substrate_subxt::{ClientBuilder, PairSigner};
 
 pub async fn send_packet(
     addr: &str,
@@ -19,7 +15,7 @@ pub async fn send_packet(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     let client = ClientBuilder::<Runtime>::new()
-        .set_url(addr.clone())
+        .set_url(addr)
         .build()
         .await?;
     let _result = client

@@ -14,13 +14,9 @@ use ibc::signer::Signer;
 
 use tendermint_proto::Protobuf;
 
-use calls::{
-    ibc::DeliverCallExt,
-    NodeRuntime as Runtime,
-};
+use calls::{ibc::DeliverCallExt, NodeRuntime as Runtime};
 
 const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
-
 
 pub async fn create_client(
     addr: &str,
@@ -147,7 +143,7 @@ pub async fn create_client(
         consensus_state,
         Signer::new(tm_signer.to_string()),
     )
-        .unwrap();
+    .unwrap();
     println!("msg = {:?}", msg);
 
     let data = msg.encode_vec().unwrap();
