@@ -845,7 +845,7 @@ dependencies = [
  "anomaly",
  "calls",
  "hex",
- "ibc 0.6.1",
+ "ibc",
  "lazy_static",
  "pallet-ibc",
  "parity-scale-codec",
@@ -2065,36 +2065,13 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.6.1"
-dependencies = [
- "bytes 1.0.1",
- "chrono",
- "dyn-clonable",
- "flex-error",
- "ibc-proto 0.9.0",
- "ics23",
- "prost",
- "prost-types",
- "regex",
- "serde",
- "serde_derive",
- "serde_json",
- "subtle-encoding",
- "tendermint",
- "tendermint-proto",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "ibc"
-version = "0.6.1"
 source = "git+https://github.com/octopus-network/ibc-rs.git?branch=master#078480a09a920fc257e10347772c04c25d280617"
 dependencies = [
  "bytes 1.0.1",
  "chrono",
  "dyn-clonable",
  "flex-error",
- "ibc-proto 0.9.0 (git+https://github.com/octopus-network/ibc-rs.git?branch=master)",
+ "ibc-proto",
  "ics23",
  "prost",
  "prost-types",
@@ -2107,17 +2084,6 @@ dependencies = [
  "tendermint-proto",
  "thiserror",
  "tracing",
-]
-
-[[package]]
-name = "ibc-proto"
-version = "0.9.0"
-dependencies = [
- "bytes 1.0.1",
- "prost",
- "prost-types",
- "tendermint-proto",
- "tonic",
 ]
 
 [[package]]
@@ -3655,7 +3621,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "ibc 0.6.1 (git+https://github.com/octopus-network/ibc-rs.git?branch=master)",
+ "ibc",
  "log",
  "parity-scale-codec",
  "prost",

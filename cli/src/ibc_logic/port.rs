@@ -1,5 +1,4 @@
 use calls::{
-    ibc::DeliverCallExt,
     template::{TestBindPortCallExt, TestReleasePortCallExt},
     NodeRuntime as Runtime,
 };

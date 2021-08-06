@@ -23,7 +23,7 @@ pub async fn create_client(
     counterparty_addr: &str,
     identifier: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use ibc::ics02_client::msgs::create_client;
+
     let signer = PairSigner::new(AccountKeyring::Bob.pair());
     println!("signer");
 

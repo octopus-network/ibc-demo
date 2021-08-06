@@ -1,4 +1,4 @@
-use calls::{ibc::DeliverCallExt, template::TestConnOpenInitCallExt, NodeRuntime as Runtime};
+use calls::{template::TestConnOpenInitCallExt, NodeRuntime as Runtime};
 use sp_core::H256;
 use sp_keyring::AccountKeyring;
 use substrate_subxt::{ClientBuilder, PairSigner};
