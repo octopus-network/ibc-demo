@@ -7,8 +7,8 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum SubCommand {
-    #[structopt(name = "create-client")]
-    CreateClient(CreateClient),
+    #[structopt(name = "client")]
+    Client(Client),
 
     #[structopt(name = "connection-open-init")]
     ConnectionOpenInit(ConnectionOpenInit),
@@ -23,9 +23,36 @@ pub enum SubCommand {
     Packet(Packet),
 }
 
-/// Create a new client
+/// handle client
+#[derive(Debug, StructOpt)]
+pub enum Client {
+    /// Create client
+    #[structopt(name = "create-client")]
+    CreateClient(CreateClient),
+
+    /// Update client
+    #[structopt(name = "update-client")]
+    UpdateClient(UpdateClient),
+
+    /// Upgrade client
+    #[structopt(name = "upgrade-client")]
+    UpgradeClient(UpgradeClient),
+}
+
 #[derive(Debug, StructOpt)]
 pub struct CreateClient {
+    /// The name of counterparty demo chain
+    pub chain_name: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct UpdateClient {
+    /// The name of counterparty demo chain
+    pub chain_name: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct UpgradeClient {
     /// The name of counterparty demo chain
     pub chain_name: String,
 }
@@ -144,16 +171,40 @@ pub async fn run() {
 
     let addr = ENDPOINTS.get(&chain).unwrap();
     match &cli.subcommand {
-        SubCommand::CreateClient(CreateClient { chain_name }) => {
-            println!("chain_name = {}", chain_name);
+        SubCommand::Client(val) => match val {
+            Client::CreateClient(create_client) => {
+                let chain_name = create_client.chain_name.clone();
+                println!("chain_name = {}", chain_name);
 
-            let counterparty_addr = ENDPOINTS.get(&chain_name.as_ref()).unwrap();
-            println!("counterparty_addr = {}", counterparty_addr);
+                let counterparty_addr = ENDPOINTS.get(&chain_name.as_ref()).unwrap();
+                println!("counterparty_addr = {}", counterparty_addr);
 
-            let result =
-                client::create_client(&addr, &counterparty_addr, chain_name.to_string()).await;
-            println!("create_client: {:?}", result);
-        }
+                let result = client::create_client::create_client(
+                    &addr,
+                    &counterparty_addr,
+                    chain_name.to_string(),
+                )
+                .await;
+                println!("create_client: {:?}", result);
+            }
+            Client::UpdateClient(update_client) => {
+                let chain_name = update_client.chain_name.clone();
+                println!("chain_name = {}", chain_name);
+
+                let counterparty_addr = ENDPOINTS.get(&chain_name.as_ref()).unwrap();
+                println!("counterparty_addr = {}", counterparty_addr);
+
+                let result = client::update_client::update_client(
+                    &addr,
+                    &counterparty_addr,
+                    chain_name.to_string(),
+                )
+                .await;
+
+                println!("update client: {:?}", result);
+            }
+            _ => unimplemented!(),
+        },
         SubCommand::ChannelOpenInit(ChannelOpenInit {
             unordered,
             connection_identifier,
