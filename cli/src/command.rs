@@ -247,33 +247,34 @@ pub async fn run() {
             client_identifier,
             counterparty_client_identifier,
         }) => {
-            if chain != "appia" {
-                println!("CHAIN can only be appia in this demo");
-                return;
-            }
+            // if chain != "appia" {
+            //     println!("CHAIN can only be appia in this demo");
+            //     return;
+            // }
 
-            let client_identifier = hex::decode(client_identifier).unwrap();
-            let client_identifier = H256::from_slice(&client_identifier);
+            // let client_identifier = hex::decode(client_identifier).unwrap();
+            // let client_identifier = H256::from_slice(&client_identifier);
 
-            let counterparty_client_identifier =
-                hex::decode(counterparty_client_identifier).unwrap();
-            let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
+            // let counterparty_client_identifier =
+            //     hex::decode(counterparty_client_identifier).unwrap();
+            // let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
 
-            let identifier = Blake2Hasher::hash(b"appia-connection");
+            // let identifier = Blake2Hasher::hash(b"appia-connection");
+            let identifier = "appia-connection".to_string();
             println!("identifier: {:?}", identifier);
-            let desired_counterparty_connection_identifier =
-                Blake2Hasher::hash(b"flaminia-connection");
-            println!(
-                "desired_counterparty_connection_identifier: {:?}",
-                desired_counterparty_connection_identifier
-            );
+            // let desired_counterparty_connection_identifier =
+            //     Blake2Hasher::hash(b"flaminia-connection");
+            // println!(
+            //     "desired_counterparty_connection_identifier: {:?}",
+            //     desired_counterparty_connection_identifier
+            // );
 
             let result = connection::conn_open_init(
                 &addr,
                 identifier,
-                desired_counterparty_connection_identifier,
-                client_identifier,
-                counterparty_client_identifier,
+                // desired_counterparty_connection_identifier,
+                // client_identifier,
+                // counterparty_client_identifier,
             )
             .await;
 

@@ -39,6 +39,8 @@ impl Runtime for NodeRuntime {
             .register_type_size::<pallet_ibc::event::primitive::ClientType>("ClientType");
         event_type_registry
             .register_type_size::<pallet_ibc::event::primitive::ClientId>("ClientId");
+        event_type_registry
+            .register_type_size::<pallet_ibc::event::primitive::ConnectionId>("ConnectionId");
         register_default_type_sizes(event_type_registry);
     }
 }

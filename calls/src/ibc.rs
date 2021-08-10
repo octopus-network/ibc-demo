@@ -2,7 +2,7 @@
 use codec::Decode;
 use codec::Encode;
 use core::marker::PhantomData;
-use pallet_ibc::event::primitive::{ClientId, ClientType, Height};
+use pallet_ibc::event::primitive::{ClientId, ClientType, Height, ConnectionId};
 use sp_core::H256;
 use substrate_subxt::{balances::Balances, module, system::System, Call, Store};
 use substrate_subxt_proc_macro::Event;
@@ -80,6 +80,16 @@ pub struct CreateClientEvent<T: Ibc> {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub consensus_height: Height,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
+pub struct OpenInitConnectionEvent<T: Ibc> {
+    pub _runtime: PhantomData<T>,
+    pub height: Height,
+    pub connection_id: Option<ConnectionId>,
+    pub client_id: ClientId,
+    pub counterparty_connection_id: Option<ConnectionId>,
+    pub counterparty_client_id: ClientId,
 }
 
 #[derive(Encode, Call)]

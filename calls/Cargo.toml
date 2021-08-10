@@ -11,6 +11,7 @@ substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.gi
 substrate-subxt-proc-macro = { version = "0.15.0" }
 
 pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'master' }
+#pallet-ibc = { path = "../../substrate/bin/node-template/pallets/ibc" }
 
 frame-system = '3.0.0'
 pallet-balances = '3.0.0'
