@@ -2,7 +2,7 @@
 use codec::Decode;
 use codec::Encode;
 use core::marker::PhantomData;
-use pallet_ibc::event::primitive::{ClientId, ClientType, Height, ConnectionId};
+use pallet_ibc::event::primitive::{ClientId, ClientType, ConnectionId, Height};
 use sp_core::H256;
 use substrate_subxt::{balances::Balances, module, system::System, Call, Store};
 use substrate_subxt_proc_macro::Event;

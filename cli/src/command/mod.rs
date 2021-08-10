@@ -1,5 +1,14 @@
+mod client;
+mod connection;
+mod channel;
+mod port;
+mod packet;
+
 use crate::ibc_logic::validate_channel_identifier;
-use crate::ibc_logic::{channel, client, connection, packet, port};
+use crate::ibc_logic::{
+    channel as IbcLogicChannel, client as IbcLogicClient, connection as IbcLogicConnection,
+    packet as IbcLogicPacket, port as IbcLogicPort,
+};
 use lazy_static::lazy_static;
 use sp_core::{Blake2Hasher, Hasher, H256};
 use std::collections::HashMap;
@@ -8,133 +17,19 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 pub enum SubCommand {
     #[structopt(name = "client")]
-    Client(Client),
+    Client(client::Client),
 
     #[structopt(name = "connection-open-init")]
-    ConnectionOpenInit(ConnectionOpenInit),
+    ConnectionOpenInit(connection::ConnectionOpenInit),
 
     #[structopt(name = "channel-open-init")]
-    ChannelOpenInit(ChannelOpenInit),
+    ChannelOpenInit(channel::ChannelOpenInit),
 
     #[structopt(name = "port-handle")]
-    Port(Port),
+    Port(port::Port),
 
     #[structopt(name = "packet-handle")]
-    Packet(Packet),
-}
-
-/// handle client
-#[derive(Debug, StructOpt)]
-pub enum Client {
-    /// Create client
-    #[structopt(name = "create-client")]
-    CreateClient(CreateClient),
-
-    /// Update client
-    #[structopt(name = "update-client")]
-    UpdateClient(UpdateClient),
-
-    /// Upgrade client
-    #[structopt(name = "upgrade-client")]
-    UpgradeClient(UpgradeClient),
-}
-
-#[derive(Debug, StructOpt)]
-pub struct CreateClient {
-    /// The name of counterparty demo chain
-    pub chain_name: String,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct UpdateClient {
-    /// The name of counterparty demo chain
-    pub chain_name: String,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct UpgradeClient {
-    /// The name of counterparty demo chain
-    pub chain_name: String,
-}
-
-/// Open a new connection
-#[derive(Debug, StructOpt)]
-pub struct ConnectionOpenInit {
-    /// The client identifier of demo chain
-    pub client_identifier: String,
-
-    /// The client identifier of counterparty demo chain
-    pub counterparty_client_identifier: String,
-}
-
-/// Open a new channel
-#[derive(Debug, StructOpt)]
-pub struct ChannelOpenInit {
-    // Channel is unordered
-    #[structopt(short, long)]
-    pub unordered: bool,
-
-    /// The connection identifier of demo chain
-    pub connection_identifier: String,
-
-    /// The identifier of port
-    pub port_identifier: String,
-
-    /// The identifier of port on counterparty chain
-    pub counterparty_port_identifier: String,
-}
-
-#[derive(Debug, StructOpt)]
-pub enum Port {
-    BindPort(BindPort),
-    ReleasePort(ReleasePort),
-}
-
-/// Bind module to an unallocated port
-#[derive(Debug, StructOpt)]
-pub struct BindPort {
-    /// The identifier of port
-    pub identifier: String,
-}
-
-/// Release a port
-#[derive(Debug, StructOpt)]
-pub struct ReleasePort {
-    /// The identifier of port
-    pub identifier: String,
-}
-
-/// Handle Packet
-#[derive(Debug, StructOpt)]
-pub enum Packet {
-    SendPacket(SendPacket),
-}
-
-/// Send an IBC packet
-#[derive(Debug, StructOpt)]
-pub struct SendPacket {
-    /// The sequence number corresponds to the order of sends and receives
-    pub sequence: String,
-
-    /// The timeoutHeight indicates a consensus height on the destination chain after which
-    /// the packet will no longer be processed, and will instead count as having timed-out
-    pub timeout_height: String,
-
-    /// The sourcePort identifies the port on the sending chain
-    pub source_port: String,
-
-    /// The sourceChannel identifies the channel end on the sending chain
-    pub source_channel: String,
-
-    /// The destPort identifies the port on the receiving chain
-    pub dest_port: String,
-
-    /// The destChannel identifies the channel end on the receiving chain
-    pub dest_channel: String,
-
-    /// The data is an opaque value which can be defined
-    /// by the application logic of the associated modules
-    pub data: String,
+    Packet(packet::Packet),
 }
 
 /// Octopus Network <hi@oct.network>
@@ -172,14 +67,14 @@ pub async fn run() {
     let addr = ENDPOINTS.get(&chain).unwrap();
     match &cli.subcommand {
         SubCommand::Client(val) => match val {
-            Client::CreateClient(create_client) => {
+            client::Client::CreateClient(create_client) => {
                 let chain_name = create_client.chain_name.clone();
                 println!("chain_name = {}", chain_name);
 
                 let counterparty_addr = ENDPOINTS.get(&chain_name.as_ref()).unwrap();
                 println!("counterparty_addr = {}", counterparty_addr);
 
-                let result = client::create_client::create_client(
+                let result = IbcLogicClient::create_client::create_client(
                     &addr,
                     &counterparty_addr,
                     chain_name.to_string(),
@@ -187,14 +82,14 @@ pub async fn run() {
                 .await;
                 println!("create_client: {:?}", result);
             }
-            Client::UpdateClient(update_client) => {
+            client::Client::UpdateClient(update_client) => {
                 let chain_name = update_client.chain_name.clone();
                 println!("chain_name = {}", chain_name);
 
                 let counterparty_addr = ENDPOINTS.get(&chain_name.as_ref()).unwrap();
                 println!("counterparty_addr = {}", counterparty_addr);
 
-                let result = client::update_client::update_client(
+                let result = IbcLogicClient::update_client::update_client(
                     &addr,
                     &counterparty_addr,
                     chain_name.to_string(),
@@ -205,7 +100,7 @@ pub async fn run() {
             }
             _ => unimplemented!(),
         },
-        SubCommand::ChannelOpenInit(ChannelOpenInit {
+        SubCommand::ChannelOpenInit(channel::ChannelOpenInit {
             unordered,
             connection_identifier,
             port_identifier,
@@ -231,7 +126,7 @@ pub async fn run() {
                 desired_counterparty_channel_identifier
             );
 
-            let result = channel::chan_open_init(
+            let result = IbcLogicChannel::chan_open_init(
                 &addr,
                 unordered.clone(),
                 connection_hops,
@@ -243,7 +138,7 @@ pub async fn run() {
             .await;
             println!("chan_open_init: {:?}", result);
         }
-        SubCommand::ConnectionOpenInit(ConnectionOpenInit {
+        SubCommand::ConnectionOpenInit(connection::ConnectionOpenInit {
             client_identifier,
             counterparty_client_identifier,
         }) => {
@@ -269,7 +164,7 @@ pub async fn run() {
             //     desired_counterparty_connection_identifier
             // );
 
-            let result = connection::conn_open_init(
+            let result = IbcLogicConnection::conn_open_init(
                 &addr,
                 identifier,
                 // desired_counterparty_connection_identifier,
@@ -281,7 +176,7 @@ pub async fn run() {
             println!("conn_open_init: {:?}", result);
         }
         SubCommand::Packet(packet) => match packet {
-            Packet::SendPacket(SendPacket {
+            packet::Packet::SendPacket(packet::SendPacket {
                 sequence,
                 timeout_height,
                 source_port,
@@ -305,7 +200,7 @@ pub async fn run() {
                 let dest_channel = H256::from_slice(&dest_channel);
                 let data: Vec<u8> = hex::decode(data).expect("Invalid message");
 
-                let _result = packet::send_packet(
+                let _result = IbcLogicPacket::send_packet(
                     &addr,
                     sequence,
                     timeout_height,
@@ -319,18 +214,18 @@ pub async fn run() {
             }
         },
         SubCommand::Port(port) => match port {
-            Port::BindPort(BindPort { identifier }) => {
+            port::Port::BindPort(port::BindPort { identifier }) => {
                 let identifier = identifier.as_bytes().to_vec();
                 println!("identifier: {:?}", identifier);
 
-                let result = port::bind_port(&addr, identifier).await;
+                let result = IbcLogicPort::bind_port(&addr, identifier).await;
                 println!("bind_port: {:?}", result);
             }
-            Port::ReleasePort(ReleasePort { identifier }) => {
+            port::Port::ReleasePort(port::ReleasePort { identifier }) => {
                 let identifier = identifier.as_bytes().to_vec();
                 println!("identifier: {:?}", identifier);
 
-                let result = port::release_port(&addr, identifier).await;
+                let result = IbcLogicPort::release_port(&addr, identifier).await;
                 println!("release_port: {:?}", result);
             }
         },

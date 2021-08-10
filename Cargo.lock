@@ -2065,7 +2065,6 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.6.1"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=master#078480a09a920fc257e10347772c04c25d280617"
 dependencies = [
  "bytes 1.0.1",
  "chrono",
@@ -2089,7 +2088,6 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.9.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=master#078480a09a920fc257e10347772c04c25d280617"
 dependencies = [
  "bytes 1.0.1",
  "prost",
@@ -3616,7 +3614,6 @@ dependencies = [
 [[package]]
 name = "pallet-ibc"
 version = "3.0.0-pre.0"
-source = "git+https://github.com/octopus-network/substrate-ibc.git?branch=master#7eb31cacd422e73a564d7ac5dca34885d30fb7e2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
