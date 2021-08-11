@@ -98,7 +98,22 @@ pub async fn run() {
 
                 println!("update client: {:?}", result);
             }
-            _ => unimplemented!(),
+            client::Client::UpgradeClient(upgrade_client) => {
+                let chain_name = upgrade_client.chain_name.clone();
+                println!("chain_name = {}", chain_name);
+
+                let counterparty_addr = ENDPOINTS.get(&chain_name.as_ref()).unwrap();
+                println!("counterparty_addr = {}", counterparty_addr);
+
+                let result = IbcLogicClient::upgrade_client::upgrade_client(
+                    &addr,
+                    &counterparty_addr,
+                    chain_name.to_string(),
+                )
+                    .await;
+
+                println!("upgrade client: {:?}", result);
+            }
         },
         SubCommand::ChannelOpenInit(channel::ChannelOpenInit {
             unordered,
