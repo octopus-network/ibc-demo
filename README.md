@@ -29,7 +29,7 @@ Once the development environment is set up, build the node template. This comman
 
 ```bash
 git clone https://github.com/cdot-network/ibc-demo.git
-cd ibc_logic-demo
+cd ibc-demo
 git submodule update --init
 cargo build --release
 ```

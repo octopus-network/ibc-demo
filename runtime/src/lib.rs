@@ -98,7 +98,7 @@ impl pallet_ibc::ModuleCallbacks for ModuleCallbacksImpl {
     }
 }
 
-/// Import the ibc_logic pallet.
+/// Import the ibc pallet.
 pub use pallet_ibc;
 
 /// Import the template pallet.
