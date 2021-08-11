@@ -1,56 +1,196 @@
 [package]
 authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-build = 'build.rs'
 description = 'A fresh FRAME-based Substrate node, ready for hacking.'
 edition = '2018'
 homepage = 'https://substrate.dev'
 license = 'Unlicense'
 name = 'node-template'
+publish = false
 repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '2.0.0'
-
-[[bin]]
-name = 'node-template'
+version = '3.0.0-monthly-2021-08'
+build = 'build.rs'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-[build-dependencies]
-substrate-build-script-utils = '2.0.0'
+[[bin]]
+name = 'node-template'
+[build-dependencies.substrate-build-script-utils]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.node-template-runtime]
+path = '../runtime'
+version = '3.0.0-monthly-2021-08'
 
 [dependencies]
-jsonrpc-core = '15.0.0'
+jsonrpc-core = '15.1.0'
 structopt = '0.3.8'
 
-# local dependencies
-node-template-runtime = { path = '../runtime', version = '2.0.0' }
+rand = "0.7.2"
 
-# Substrate dependencies
-frame-benchmarking = '2.0.0'
-frame-benchmarking-cli = '2.0.0'
-pallet-transaction-payment-rpc = '2.0.0'
-sc-basic-authorship = '0.8.0'
-sc-cli = { features = ['wasmtime'], version = '0.8.0' }
-sc-client-api = '2.0.0'
-sc-consensus = '0.8.0'
-sc-consensus-aura = '0.8.0'
-sc-executor = { features = ['wasmtime'], version = '0.8.0' }
-sc-finality-grandpa = '0.8.0'
-sc-rpc = '2.0.0'
-sc-rpc-api = '0.8.0'
-sc-service = { features = ['wasmtime'], version = '0.8.0' }
-sc-transaction-pool = '2.0.0'
-sp-api = '2.0.0'
-sp-block-builder = '2.0.0'
-sp-blockchain = '2.0.0'
-sp-consensus = '0.8.0'
-sp-consensus-aura = '0.8.0'
-sp-core = '2.0.0'
-sp-finality-grandpa = '2.0.0'
-sp-inherents = '2.0.0'
-sp-runtime = '2.0.0'
-sp-transaction-pool = '2.0.0'
-substrate-frame-rpc-system = '2.0.0'
+sc-chain-spec = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus-babe-rpc = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus-epochs = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus-slots = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus-uncles = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sc-finality-grandpa-rpc = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sc-network = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sc-sync-state-rpc = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+sp-authorship = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-keystore = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git" }
+pallet-im-online = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+pallet-mmr-rpc = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+pallet-staking = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-transaction-pool = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+
+beefy-primitives = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
+beefy-gadget = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
+beefy-gadget-rpc = { version = "0.1.0", git = "https://github.com/octopus-network/grandpa-bridge-gadget", branch = "dev" }
+
+[dependencies.frame-benchmarking]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.1.0'
+
+[dependencies.frame-benchmarking-cli]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.pallet-transaction-payment-rpc]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sc-basic-authorship]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-cli]
+features = ['wasmtime']
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-client-api]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sc-consensus]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-consensus-babe]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-executor]
+features = ['wasmtime']
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-finality-grandpa]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-keystore]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sc-rpc]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sc-rpc-api]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-service]
+features = ['wasmtime']
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sc-telemetry]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sc-transaction-pool]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+# [dependencies.sc-transaction-pool-api]
+# git = 'https://github.com/paritytech/substrate.git'
+# tag = 'monthly-2021-08'
+# version = '3.0.0'
+
+[dependencies.sp-api]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-block-builder]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-blockchain]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-consensus]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sp-consensus-babe]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '0.9.0'
+
+[dependencies.sp-core]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-finality-grandpa]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-inherents]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-runtime]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.sp-timestamp]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
+
+[dependencies.substrate-frame-rpc-system]
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '3.0.0'
 
 [features]
 default = []
