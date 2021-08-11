@@ -2066,7 +2066,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.6.1"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=dv-grandpa-client-dev#973d11350dfc4ca5685fb930b49e0232830235a9"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=dv-grandpa-client-dev#ffd671adabc06e9b81555e3dc87b61ff2412f948"
 dependencies = [
  "bytes 1.0.1",
  "chrono",
@@ -2090,7 +2090,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.9.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=dv-grandpa-client-dev#973d11350dfc4ca5685fb930b49e0232830235a9"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=dv-grandpa-client-dev#ffd671adabc06e9b81555e3dc87b61ff2412f948"
 dependencies = [
  "bytes 1.0.1",
  "prost",

@@ -27,7 +27,3 @@ substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.gi
 pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'dv-ibc-dev' }
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-grandpa-client-dev" }
 ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-grandpa-client-dev" }
-
-
-
-
