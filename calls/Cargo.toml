@@ -7,7 +7,7 @@ edition = '2018'
 [dependencies]
 async-trait = "0.1.50"
 codec = { package = 'parity-scale-codec', version = '2.0.0', default-features = false, features = ['derive', 'full'] }
-substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.git", branch = "octopus" }
+substrate-subxt = { git = "https://github.com/octopus-network/substrate-subxt.git", branch = "octopus-dev" }
 substrate-subxt-proc-macro = { version = "0.15.0" }
 
 pallet-ibc = { git = 'https://github.com/octopus-network/substrate-ibc.git', branch = 'dv-ibc-dev' }
